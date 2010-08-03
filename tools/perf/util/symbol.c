@@ -1093,7 +1093,15 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
 				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
 				  (u64)sym.st_value, (u64)shdr.sh_addr,
 				  (u64)shdr.sh_offset);
-			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+			/* Assumptions:
+			 *	a) shdr.sh_addr - shdr.sh_offset ==
+			 *		map->start - map->pgoff
+			 *	b) map->pgoff == 0
+			 * These are true iff we are looking at a function
+			 * symbol in the main executable segment _and_
+			 * the main executable segment starts at the start of
+			 * the ELF image (normally true). */
+			sym.st_value -= map->start;
 		}
 		/*
 		 * We need to figure out if the object was created from C++ sources
