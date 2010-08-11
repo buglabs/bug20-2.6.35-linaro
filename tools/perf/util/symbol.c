@@ -25,6 +25,8 @@
 #define NT_GNU_BUILD_ID 3
 #endif
 
+static bool dso__build_id_equal(const struct dso *self, u8 *build_id);
+static int elf_read_build_id(Elf *elf, void *bf, size_t size);
 static void dsos__add(struct list_head *head, struct dso *dso);
 static struct map *map__new2(u64 start, struct dso *dso, enum map_type type);
 static int dso__load_kernel_sym(struct dso *self, struct map *map,
@@ -934,7 +936,8 @@ static bool elf_sec__is_a(GElf_Shdr *self, Elf_Data *secstrs, enum map_type type
 }
 
 static int dso__load_sym(struct dso *self, struct map *map, const char *name,
-			 int fd, symbol_filter_t filter, int kmodule)
+			 int fd, symbol_filter_t filter, int kmodule,
+			 int want_symtab)
 {
 	struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
 	struct map *curr_map = map;
@@ -953,17 +956,32 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
 
 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
 	if (elf == NULL) {
-		pr_err("%s: cannot read %s ELF file.\n", __func__, name);
+		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
 		goto out_close;
 	}
 
 	if (gelf_getehdr(elf, &ehdr) == NULL) {
-		pr_err("%s: cannot get elf header.\n", __func__);
+		pr_debug("%s: cannot get elf header.\n", __func__);
 		goto out_elf_end;
+	}
+
+	/* Always reject images with a mismatched build-id: */
+	if (self->has_build_id) {
+		u8 build_id[BUILD_ID_SIZE];
+
+		if (elf_read_build_id(elf, build_id,
+				      BUILD_ID_SIZE) != BUILD_ID_SIZE)
+			goto out_elf_end;
+
+		if (!dso__build_id_equal(self, build_id))
+			goto out_elf_end;
 	}
 
 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
 	if (sec == NULL) {
+		if (want_symtab)
+			goto out_elf_end;
+
 		sec = elf_section_by_name(elf, &ehdr, &shdr, ".dynsym", NULL);
 		if (sec == NULL)
 			goto out_elf_end;
@@ -1075,7 +1093,15 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
 				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
 				  (u64)sym.st_value, (u64)shdr.sh_addr,
 				  (u64)shdr.sh_offset);
-			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+			/* Assumptions:
+			 *	a) shdr.sh_addr - shdr.sh_offset ==
+			 *		map->start - map->pgoff
+			 *	b) map->pgoff == 0
+			 * These are true iff we are looking at a function
+			 * symbol in the main executable segment _and_
+			 * the main executable segment starts at the start of
+			 * the ELF image (normally true). */
+			sym.st_value -= map->start;
 		}
 		/*
 		 * We need to figure out if the object was created from C++ sources
@@ -1151,37 +1177,26 @@ bool __dsos__read_build_ids(struct list_head *head, bool with_hits)
  */
 #define NOTE_ALIGN(n) (((n) + 3) & -4U)
 
-int filename__read_build_id(const char *filename, void *bf, size_t size)
+static int elf_read_build_id(Elf *elf, void *bf, size_t size)
 {
-	int fd, err = -1;
+	int err = -1;
 	GElf_Ehdr ehdr;
 	GElf_Shdr shdr;
 	Elf_Data *data;
 	Elf_Scn *sec;
 	Elf_Kind ek;
 	void *ptr;
-	Elf *elf;
 
 	if (size < BUILD_ID_SIZE)
 		goto out;
 
-	fd = open(filename, O_RDONLY);
-	if (fd < 0)
-		goto out;
-
-	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-	if (elf == NULL) {
-		pr_debug2("%s: cannot read %s ELF file.\n", __func__, filename);
-		goto out_close;
-	}
-
 	ek = elf_kind(elf);
 	if (ek != ELF_K_ELF)
-		goto out_elf_end;
+		goto out;
 
 	if (gelf_getehdr(elf, &ehdr) == NULL) {
 		pr_err("%s: cannot get elf header.\n", __func__);
-		goto out_elf_end;
+		goto out;
 	}
 
 	sec = elf_section_by_name(elf, &ehdr, &shdr,
@@ -1190,12 +1205,12 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
 		sec = elf_section_by_name(elf, &ehdr, &shdr,
 					  ".notes", NULL);
 		if (sec == NULL)
-			goto out_elf_end;
+			goto out;
 	}
 
 	data = elf_getdata(sec, NULL);
 	if (data == NULL)
-		goto out_elf_end;
+		goto out;
 
 	ptr = data->d_buf;
 	while (ptr < (data->d_buf + data->d_size)) {
@@ -1217,7 +1232,31 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
 		}
 		ptr += descsz;
 	}
-out_elf_end:
+
+out:
+	return err;
+}
+
+int filename__read_build_id(const char *filename, void *bf, size_t size)
+{
+	int fd, err = -1;
+	Elf *elf;
+
+	if (size < BUILD_ID_SIZE)
+		goto out;
+
+	fd = open(filename, O_RDONLY);
+	if (fd < 0)
+		goto out;
+
+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+	if (elf == NULL) {
+		pr_debug2("%s: cannot read %s ELF file.\n", __func__, filename);
+		goto out_close;
+	}
+
+	err = elf_read_build_id(elf, bf, size);
+
 	elf_end(elf);
 out_close:
 	close(fd);
@@ -1293,11 +1332,11 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
 {
 	int size = PATH_MAX;
 	char *name;
-	u8 build_id[BUILD_ID_SIZE];
 	int ret = -1;
 	int fd;
 	struct machine *machine;
 	const char *root_dir;
+	int want_symtab;
 
 	dso__set_loaded(self, map->type);
 
@@ -1324,13 +1363,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
 		return ret;
 	}
 
-	self->origin = DSO__ORIG_BUILD_ID_CACHE;
-	if (dso__build_id_filename(self, name, size) != NULL)
-		goto open_file;
-more:
-	do {
-		self->origin++;
+	/* Iterate over candidate debug images.
+	 * On the first pass, only load images if they have a full symtab.
+	 * Failing that, do a second pass where we accept .dynsym also
+	 */
+	for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
+	     self->origin != DSO__ORIG_NOT_FOUND;
+	     self->origin++) {
 		switch (self->origin) {
+		case DSO__ORIG_BUILD_ID_CACHE:
+			if (dso__build_id_filename(self, name, size) == NULL)
+				continue;
+			break;
 		case DSO__ORIG_FEDORA:
 			snprintf(name, size, "/usr/lib/debug%s.debug",
 				 self->long_name);
@@ -1339,21 +1383,20 @@ more:
 			snprintf(name, size, "/usr/lib/debug%s",
 				 self->long_name);
 			break;
-		case DSO__ORIG_BUILDID:
-			if (filename__read_build_id(self->long_name, build_id,
-						    sizeof(build_id))) {
-				char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-				build_id__sprintf(build_id, sizeof(build_id),
-						  build_id_hex);
-				snprintf(name, size,
-					 "/usr/lib/debug/.build-id/%.2s/%s.debug",
-					build_id_hex, build_id_hex + 2);
-				if (self->has_build_id)
-					goto compare_build_id;
-				break;
+		case DSO__ORIG_BUILDID: {
+			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+
+			if (!self->has_build_id)
+				continue;
+
+			build_id__sprintf(self->build_id,
+					  sizeof(self->build_id),
+					  build_id_hex);
+			snprintf(name, size,
+				 "/usr/lib/debug/.build-id/%.2s/%s.debug",
+				 build_id_hex, build_id_hex + 2);
 			}
-			self->origin++;
-			/* Fall thru */
+			break;
 		case DSO__ORIG_DSO:
 			snprintf(name, size, "%s", self->long_name);
 			break;
@@ -1366,36 +1409,41 @@ more:
 			break;
 
 		default:
-			goto out;
+			/*
+			 * If we wanted a full symtab but no image had one,
+			 * relax our requirements and repeat the search.
+			 */
+			if (want_symtab) {
+				want_symtab = 0;
+				self->origin = DSO__ORIG_BUILD_ID_CACHE;
+			} else
+				continue;
 		}
 
-		if (self->has_build_id) {
-			if (filename__read_build_id(name, build_id,
-						    sizeof(build_id)) < 0)
-				goto more;
-compare_build_id:
-			if (!dso__build_id_equal(self, build_id))
-				goto more;
-		}
-open_file:
+		/* Name is now the name of the next image to try */
 		fd = open(name, O_RDONLY);
-	} while (fd < 0);
+		if (fd < 0)
+			continue;
 
-	ret = dso__load_sym(self, map, name, fd, filter, 0);
-	close(fd);
+		ret = dso__load_sym(self, map, name, fd, filter, 0,
+				    want_symtab);
+		close(fd);
 
-	/*
-	 * Some people seem to have debuginfo files _WITHOUT_ debug info!?!?
-	 */
-	if (!ret)
-		goto more;
+		/*
+		 * Some people seem to have debuginfo files _WITHOUT_ debug
+		 * info!?!?
+		 */
+		if (!ret)
+			continue;
 
-	if (ret > 0) {
-		int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
-		if (nr_plt > 0)
-			ret += nr_plt;
+		if (ret > 0) {
+			int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
+			if (nr_plt > 0)
+				ret += nr_plt;
+			break;
+		}
 	}
-out:
+
 	free(name);
 	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
 		return 0;
@@ -1656,36 +1704,12 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
 {
 	int err = -1, fd;
 
-	if (self->has_build_id) {
-		u8 build_id[BUILD_ID_SIZE];
-
-		if (filename__read_build_id(vmlinux, build_id,
-					    sizeof(build_id)) < 0) {
-			pr_debug("No build_id in %s, ignoring it\n", vmlinux);
-			return -1;
-		}
-		if (!dso__build_id_equal(self, build_id)) {
-			char expected_build_id[BUILD_ID_SIZE * 2 + 1],
-			     vmlinux_build_id[BUILD_ID_SIZE * 2 + 1];
-
-			build_id__sprintf(self->build_id,
-					  sizeof(self->build_id),
-					  expected_build_id);
-			build_id__sprintf(build_id, sizeof(build_id),
-					  vmlinux_build_id);
-			pr_debug("build_id in %s is %s while expected is %s, "
-				 "ignoring it\n", vmlinux, vmlinux_build_id,
-				 expected_build_id);
-			return -1;
-		}
-	}
-
 	fd = open(vmlinux, O_RDONLY);
 	if (fd < 0)
 		return -1;
 
 	dso__set_loaded(self, map->type);
-	err = dso__load_sym(self, map, vmlinux, fd, filter, 0);
+	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
 	close(fd);
 
 	if (err > 0)
