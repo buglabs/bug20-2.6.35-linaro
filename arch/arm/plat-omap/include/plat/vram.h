@@ -33,6 +33,7 @@ extern int omap_vram_alloc(int mtype, size_t size, unsigned long *paddr);
 extern int omap_vram_reserve(unsigned long paddr, size_t size);
 extern void omap_vram_get_info(unsigned long *vram, unsigned long *free_vram,
 		unsigned long *largest_free_block);
+extern void __iomem *omap_vram_remap(size_t size, unsigned long paddr);
 
 #ifdef CONFIG_OMAP2_VRAM
 extern void omap_vram_set_sdram_vram(u32 size, u32 start);
