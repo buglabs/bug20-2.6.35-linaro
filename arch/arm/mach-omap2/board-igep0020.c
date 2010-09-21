@@ -355,9 +355,10 @@ static struct regulator_init_data igep2_vdac = {
 	.consumer_supplies	= &igep2_vdda_dac_supply,
 };
 
-static struct regulator_consumer_supply igep2_vpll2_supply = {
-	.supply	= "vdds_dsi",
-	.dev	= &igep2_dss_device.dev,
+/* VPLL2 for digital video outputs */
+static struct regulator_consumer_supply igep2_vdds_supplies[] = {
+	REGULATOR_SUPPLY("vdds_sdi", "omapdss"),
+	REGULATOR_SUPPLY("vdds_dsi", "omapdss"),
 };
 
 static struct regulator_init_data igep2_vpll2 = {
@@ -371,8 +372,8 @@ static struct regulator_init_data igep2_vpll2 = {
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
 	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &igep2_vpll2_supply,
+	.num_consumer_supplies	= ARRAY_SIZE(igep2_vdds_supplies),
+	.consumer_supplies	= igep2_vdds_supplies,
 };
 
 static void __init igep2_display_init(void)
