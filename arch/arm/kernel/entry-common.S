@@ -295,7 +295,6 @@ ENTRY(vector_swi)
 
 	get_thread_info tsk
 	adr	tbl, sys_call_table		@ load syscall table pointer
-	ldr	ip, [tsk, #TI_FLAGS]		@ check for syscall tracing
 
 #if defined(CONFIG_OABI_COMPAT)
 	/*
@@ -312,19 +311,21 @@ ENTRY(vector_swi)
 	eor	scno, scno, #__NR_SYSCALL_BASE	@ check OS number
 #endif
 
+	ldr	r10, [tsk, #TI_FLAGS]		@ check for syscall tracing
 	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
-	tst	ip, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
-	bne	__sys_trace
 
 #ifdef CONFIG_SECCOMP
-	tst	ip, #_TIF_SECCOMP
+	tst	r10, #_TIF_SECCOMP
 	beq	1f
 	mov	r0, scno
-	bl	__secure_computing
+	bl	__secure_computing	
 	add	r0, sp, #S_R0 + S_OFF		@ pointer to regs
 	ldmia	r0, {r0 - r3}			@ have to reload r0 - r3
 1:
 #endif
+
+	tst	r10, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
+	bne	__sys_trace
 
 	cmp	scno, #NR_syscalls		@ check upper syscall limit
 	adr	lr, BSYM(ret_fast_syscall)	@ return address
@@ -348,15 +349,8 @@ __sys_trace:
 	mov	r0, #0				@ trace entry [IP = 0]
 	bl	syscall_trace
 
-	mov	scno, r0			@ syscall number (possibly new)
-
-#ifdef CONFIG_SECCOMP
-	ldr	ip, [tsk, #TI_FLAGS]
-	tst	ip, #_TIF_SECCOMP
-	blne	__secure_computing
-#endif
-
 	adr	lr, BSYM(__sys_trace_return)	@ return address
+	mov	scno, r0			@ syscall number (possibly new)
 	add	r1, sp, #S_R0 + S_OFF		@ pointer to regs
 	cmp	scno, #NR_syscalls		@ check upper syscall limit
 	ldmccia	r1, {r0 - r3}			@ have to reload r0 - r3
