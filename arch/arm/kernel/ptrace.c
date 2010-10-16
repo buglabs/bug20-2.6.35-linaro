@@ -26,6 +26,7 @@
 
 #include "ptrace.h"
 
+#define REG_LR	14
 #define REG_PC	15
 #define REG_PSR	16
 /*
@@ -424,6 +425,9 @@ get_branch_address(struct task_struct *child, unsigned long pc, unsigned long in
 	    }
 	    break;
 	}
+
+	if (alt >= (void*)CONFIG_VECTORS_BASE && alt < (void*)CONFIG_VECTORS_BASE + PAGE_SIZE)
+		alt = get_user_reg(child, REG_LR);
 
 	return alt;
 }
