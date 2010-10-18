@@ -1375,7 +1375,7 @@ static int omapfb_alloc_fbmem(struct fb_info *fbi, unsigned long size,
 	}
 
 	if (ofbi->rotation_type != OMAP_DSS_ROT_VRFB) {
-		vaddr = omap_vram_remap(size, paddr);
+		vaddr = ioremap_wc(paddr, size);
 
 		if (!vaddr) {
 			dev_err(fbdev->dev, "failed to ioremap framebuffer\n");
