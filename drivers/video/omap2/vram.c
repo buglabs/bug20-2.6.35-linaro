@@ -575,6 +575,8 @@ void __init omap_vram_reserve_sdram_memblock(void)
 		}
 	} else {
 		paddr = memblock_alloc_base(size, PAGE_SIZE, MEMBLOCK_REAL_LIMIT);
+		memblock_free(paddr, size);
+		memblock_remove(paddr, size);
 	}
 
 	omap_vram_add_region(paddr, size);
