@@ -58,3 +58,13 @@ struct platform_device *__init imx_add_mxc_nand_v21(resource_size_t iobase,
 struct platform_device *__init imx_add_spi_imx(int id,
 		resource_size_t iobase, resource_size_t iosize, int irq,
 		const struct spi_imx_master *pdata);
+
+#include <mach/esdhc.h>
+struct imx_esdhc_imx_data {
+	int id;
+	resource_size_t iobase;
+	resource_size_t irq;
+};
+struct platform_device *__init imx_add_esdhc(
+		const struct imx_esdhc_imx_data *data,
+		const struct esdhc_platform_data *pdata);
