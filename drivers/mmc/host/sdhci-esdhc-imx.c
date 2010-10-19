@@ -134,7 +134,8 @@ static struct sdhci_ops sdhci_esdhc_ops = {
 
 struct sdhci_pltfm_data sdhci_esdhc_imx_pdata = {
 	.quirks = ESDHC_DEFAULT_QUIRKS | SDHCI_QUIRK_NO_MULTIBLOCK
-			| SDHCI_QUIRK_BROKEN_ADMA,
+			| SDHCI_QUIRK_BROKEN_ADMA
+			| SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
 	/* ADMA has issues. Might be fixable */
 	/* NO_MULTIBLOCK might be MX35 only (Errata: ENGcm07207) */
 	.ops = &sdhci_esdhc_ops,
