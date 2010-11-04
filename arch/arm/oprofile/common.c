@@ -102,6 +102,7 @@ static int op_create_counter(int cpu, int event)
 	if (IS_ERR(pevent)) {
 		ret = PTR_ERR(pevent);
 	} else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
+		perf_event_release_kernel(pevent);
 		pr_warning("oprofile: failed to enable event %d "
 				"on CPU %d\n", event, cpu);
 		ret = -EBUSY;
@@ -364,8 +365,11 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
 	}
 
 	ret = init_driverfs();
-	if (ret)
-		goto out;
+	if (ret) {
+		kfree(counter_config);
+		counter_config = NULL;
+		return ret;
+	}
 
 	for_each_possible_cpu(cpu) {
 		perf_events[cpu] = kcalloc(perf_num_counters,
@@ -406,18 +410,36 @@ void __exit oprofile_arch_exit(void)
 	int cpu, id;
 	struct perf_event *event;
 
+<<<<<<< HEAD
 	for_each_possible_cpu(cpu) {
 		for (id = 0; id < perf_num_counters; ++id) {
 			event = perf_events[cpu][id];
 			if (event)
 				perf_event_release_kernel(event);
+=======
+	if (*perf_events) {
+		for_each_possible_cpu(cpu) {
+			for (id = 0; id < perf_num_counters; ++id) {
+				event = perf_events[cpu][id];
+				if (event != NULL)
+					perf_event_release_kernel(event);
+			}
+			kfree(perf_events[cpu]);
+>>>>>>> v2.6.35.8
 		}
 
 		kfree(perf_events[cpu]);
 	}
 
+<<<<<<< HEAD
 	kfree(counter_config);
 	exit_driverfs();
+=======
+	if (counter_config) {
+		kfree(counter_config);
+		exit_driverfs();
+	}
+>>>>>>> v2.6.35.8
 }
 #else
 int __init oprofile_arch_init(struct oprofile_operations *ops)
