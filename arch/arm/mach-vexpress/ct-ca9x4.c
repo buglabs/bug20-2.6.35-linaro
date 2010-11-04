@@ -16,7 +16,6 @@
 #include <asm/hardware/gic.h>
 #include <asm/mach-types.h>
 #include <asm/pmu.h>
-#include <asm/smp_twd.h>
 
 #include <mach/clkdev.h>
 #include <mach/ct-ca9x4.h>
@@ -54,7 +53,6 @@ static struct map_desc ct_ca9x4_io_desc[] __initdata = {
 
 static void __init ct_ca9x4_map_io(void)
 {
-	twd_base = MMIO_P2V(A9_MPCORE_TWD);
 	v2m_map_io(ct_ca9x4_io_desc, ARRAY_SIZE(ct_ca9x4_io_desc));
 }
 
