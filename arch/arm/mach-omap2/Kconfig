@@ -141,6 +141,12 @@ config MACH_OVERO
 	default y
 	select OMAP_PACKAGE_CBB
 
+config MACH_OMAP3BUG
+	bool "OMAP 3530 BUGBASE board"
+        depends on ARCH_OMAP3
+	select HAVE_PWM
+	select OMAP_PACKAGE_CBB
+
 config MACH_OMAP3EVM
 	bool "OMAP 3530 EVM board"
 	depends on ARCH_OMAP3
