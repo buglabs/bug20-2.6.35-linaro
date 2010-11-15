@@ -557,6 +557,12 @@ config SERIAL_MAX3100
 	help
 	  MAX3100 chip support
 
+config SERIAL_SC16IS
+       tristate "NXP SC16IS Dual-UART Support"
+       depends on SC16IS_CORE
+       help
+          Support for NXP SC16IS 16C450 Dual-UART devices.
+
 config SERIAL_DZ
 	bool "DECstation DZ serial driver"
 	depends on MACH_DECSTATION && 32BIT
