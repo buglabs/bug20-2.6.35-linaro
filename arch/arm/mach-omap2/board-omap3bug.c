@@ -33,6 +33,7 @@
 #include <linux/i2c/pca953x.h>
 
 #include <linux/spi/spi.h>
+#include <linux/spi/sc16is.h>
 
 #include <mach/hardware.h>
 #include <asm/mach-types.h>
@@ -50,6 +51,7 @@
 
 #include "mux.h"
 #include "hsmmc.h"
+#include "sdram-micron-mt46h32m32lf-6.h"
 
 #define GPMC_CS0_BASE  0x60
 #define GPMC_CS_SIZE   0x30
@@ -192,7 +194,100 @@ static void __init bug_display_init(void)
 	gpio_direction_output(bug_dvi_device.reset_gpio, 0);
 }
 
-#include "sdram-micron-mt46h32m32lf-6.h"
+static int bug_spi_uart_gpio_setup(struct spi_device *spi, unsigned gpio, unsigned ngpio, void *context)
+{
+	int r;
+  
+	printk(KERN_INFO "spi_uart_gpio: Setting up gpios...\n");
+	//bug_display_init();
+	r =   gpio_request(gpio + 4, "wifi_en");  
+	if (r) {
+	  printk(KERN_ERR "spi_uart_gpio: failed to get wifi_en...\n");
+	  return r;
+	}
+	gpio_direction_output(gpio+4, 1);
+
+	mdelay(100);
+	r =   gpio_request(157, "wifi_rst");
+	if (r) {
+	  printk(KERN_ERR "spi_uart_gpio: failed to get wifi_rst...\n");
+	  return r;
+	}
+	gpio_direction_output(157, 1);
+
+	r =   gpio_request(156, "bt_rst");
+	if (r) {
+	  printk(KERN_ERR "spi_uart_gpio: failed to get bt_rst...\n");
+	  return r;
+	}
+	gpio_direction_output(156, 1);
+
+	r =   gpio_request(163, "wifi_wakeup");
+	if (r) {
+	  printk(KERN_ERR "spi_uart_gpio: failed to get wifi_wakeup...\n");
+	  return r;
+	}
+	gpio_direction_output(163, 0);
+	  
+	r =   gpio_request(235, "5V_en");
+	gpio_direction_output(235,1);
+	gpio_free(235);
+	mdelay(100);
+	gpio_set_value (163, 1);
+	gpio_set_value (157, 0);
+  
+	mdelay(100);
+	gpio_set_value (157, 1);
+	gpio_set_value (156, 0);
+	mdelay(100);
+	gpio_set_value (156, 1);
+
+	printk(KERN_INFO "spi_uart_gpio: Freeing gpios...");
+	gpio_free(232);
+	/*
+	gpio_free(156);
+	gpio_free(157);
+	gpio_free(163);
+	*/
+	return 0;
+}
+
+static struct sc16is_gpio_platform_data bugbase_spi_gpio = {
+  .gpio_base	= OMAP_MAX_GPIO_LINES + TWL4030_GPIO_MAX + 18,
+  .setup	= bug_spi_uart_gpio_setup,
+};
+
+
+static struct sc16is_uart_platform_data bugbase_spi_uart = {
+  .irq_pin = 36,
+};
+
+static struct sc16is_platform_data bugbase_sc_data = {
+  .gpios = &bugbase_spi_gpio,
+  .uarts = &bugbase_spi_uart,
+};
+
+static struct spi_board_info __initdata bug_spi_board_info[] = {
+  {
+    .modalias                   = "sc16is",
+    .bus_num                    = 1,
+    .chip_select                = 0,
+    .mode                       = SPI_MODE_0,
+    .max_speed_hz               = 2000000,
+    .platform_data              = &bugbase_sc_data,
+  },
+/*  
+  {
+    .modalias			= "spi-lcd",
+    .bus_num			= 3,
+    .chip_select		= 0,
+    .max_speed_hz		= 1000000,
+    .controller_data		= NULL,
+    .platform_data 		= &omap3_bug_lcd_device, //&lcd_mcspi_config,
+    .mode			= SPI_MODE_0,
+  },
+*/  
+};
 
 static struct omap2_hsmmc_info mmc[] = {
 	{
@@ -202,13 +297,13 @@ static struct omap2_hsmmc_info mmc[] = {
 		.gpio_cd	= -EINVAL,
 	},
 	{
-	  	.mmc = 2,
-		.wires = 4,
+	  	.mmc 		= 2,
+		.wires 		= 4,
 		.gpio_cd	= 170,
 	},
 	{
-		.mmc = 3,
-		.wires = 1,
+		.mmc 		= 3,
+		.wires 		= 1,
 		.gpio_cd	= -EINVAL,
 		.gpio_wp	= -EINVAL,
 	},
@@ -587,7 +682,7 @@ static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
 
 	.phy_reset  = true,
 	.reset_gpio_port[0]  = -EINVAL,
-	.reset_gpio_port[1]  = 147,
+	.reset_gpio_port[1]  = 126,
 	.reset_gpio_port[2]  = -EINVAL
 };
 
@@ -609,6 +704,8 @@ static void __init omap3_bug_init(void)
 {
 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
 	omap3_bug_i2c_init();
+	spi_register_board_info(bug_spi_board_info,
+				ARRAY_SIZE(bug_spi_board_info));
 	/*
 	platform_add_devices(omap3_bug_devices,
 			ARRAY_SIZE(omap3_bug_devices));
