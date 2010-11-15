@@ -202,6 +202,12 @@ config GPIO_TC35892
 	  This enables support for the GPIOs found on the TC35892
 	  I/O Expander.
 
+config GPIO_SC16IS
+	tristate "NXP SC16IS7x GPIOs"
+       	depends on SC16IS_CORE
+       	help
+          Say yes to acces the GPIO signals of NXP SC16IS devices.
+
 config GPIO_TWL4030
 	tristate "TWL4030, TWL5030, and TPS659x0 GPIOs"
 	depends on TWL4030_CORE
