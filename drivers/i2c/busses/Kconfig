@@ -486,6 +486,18 @@ config I2C_PCA_PLATFORM
 	  This driver can also be built as a module.  If so, the module
 	  will be called i2c-pca-platform.
 
+config I2C_PCA954X
+        tristate "PCA954x I2C switches/multiplexers"
+	depends on I2C
+	help
+	   Enabling this option will add support for Philips/NXP I2C switches
+	   an multiplexers. The I2C is multiplexed over up to 8 different 
+	   channels, where the I2C clients live.  Saying yes here will give 
+	   you access to these in addition to the trunk.
+		    
+	   This driver can also be built as a module.  If so, the module
+	   will be called i2c-pca945x.
+
 config I2C_PMCMSP
 	tristate "PMC MSP I2C TWI Controller"
 	depends on PMC_MSP
