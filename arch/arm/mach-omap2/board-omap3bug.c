@@ -29,6 +29,8 @@
 #include <linux/mtd/nand.h>
 
 #include <linux/regulator/machine.h>
+#include <linux/regulator/fixed.h>
+
 #include <linux/i2c/twl.h>
 #include <linux/i2c/pca953x.h>
 
@@ -57,6 +59,7 @@
 #define GPMC_CS_SIZE   0x30
 
 #define NAND_BLOCK_SIZE		SZ_128K
+#include <linux/regulator/fixed.h>
 
 static int bug_twl_gpio_setup(struct device *dev,
                unsigned gpio, unsigned ngpio);
@@ -304,6 +307,7 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc 		= 3,
 		.wires 		= 1,
+		.nonremovable	= true,
 		.gpio_cd	= -EINVAL,
 		.gpio_wp	= -EINVAL,
 	},
@@ -514,7 +518,6 @@ static struct i2c_board_info __initdata bug_i2c3_boardinfo[] = {
 	  I2C_BOARD_INFO("pca9546",  0x70),
 	},
 };
-
 
 static int __init omap3_bug_i2c_init(void)
 {
