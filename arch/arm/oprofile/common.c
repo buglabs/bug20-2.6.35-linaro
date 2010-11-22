@@ -352,6 +352,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
 {
 	int cpu, ret = 0;
 
+	memset(&perf_events, 0, sizeof(perf_events));
+
 	perf_num_counters = armpmu_get_max_events();
 
 	counter_config = kcalloc(perf_num_counters,
@@ -365,11 +367,8 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
 	}
 
 	ret = init_driverfs();
-	if (ret) {
-		kfree(counter_config);
-		counter_config = NULL;
-		return ret;
-	}
+	if (ret)
+		goto out;
 
 	for_each_possible_cpu(cpu) {
 		perf_events[cpu] = kcalloc(perf_num_counters,
@@ -410,36 +409,18 @@ void __exit oprofile_arch_exit(void)
 	int cpu, id;
 	struct perf_event *event;
 
-<<<<<<< HEAD
 	for_each_possible_cpu(cpu) {
 		for (id = 0; id < perf_num_counters; ++id) {
 			event = perf_events[cpu][id];
 			if (event)
 				perf_event_release_kernel(event);
-=======
-	if (*perf_events) {
-		for_each_possible_cpu(cpu) {
-			for (id = 0; id < perf_num_counters; ++id) {
-				event = perf_events[cpu][id];
-				if (event != NULL)
-					perf_event_release_kernel(event);
-			}
-			kfree(perf_events[cpu]);
->>>>>>> v2.6.35.8
 		}
 
 		kfree(perf_events[cpu]);
 	}
 
-<<<<<<< HEAD
 	kfree(counter_config);
 	exit_driverfs();
-=======
-	if (counter_config) {
-		kfree(counter_config);
-		exit_driverfs();
-	}
->>>>>>> v2.6.35.8
 }
 #else
 int __init oprofile_arch_init(struct oprofile_operations *ops)
