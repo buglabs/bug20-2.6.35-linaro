@@ -1,0 +1,6 @@
+config BMI_MDACC
+	tristate "BMI Motion Detector/Accelerometer"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  This is the BMI Motion Detector/Acceleromter driver.

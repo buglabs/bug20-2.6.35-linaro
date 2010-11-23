@@ -1,0 +1,17 @@
+#
+# BMI Infrastructure
+#
+
+menuconfig BMI
+       tristate "BMI"
+       depends on I2C && BUG_DOCK
+       default n
+       ---help---
+         BMI bus infrastructure
+
+if BMI
+
+source drivers/bmi/slots/Kconfig
+source drivers/bmi/pims/Kconfig
+
+endif # BMI

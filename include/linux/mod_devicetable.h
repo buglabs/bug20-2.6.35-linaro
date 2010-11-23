@@ -343,6 +343,19 @@ struct eisa_device_id {
 
 #define EISA_DEVICE_MODALIAS_FMT "eisa:s%s"
 
+/* Bug Labs BeagleBug */
+
+struct bmi_device_id {
+  __u16 match_flags;
+  __u16 vendor;
+  __u16 product;
+  __u16 revision;
+};
+
+#define BMI_DEVICE_ID_MATCH_VENDOR	(1)
+#define BMI_DEVICE_ID_MATCH_PRODUCT	(2)
+#define BMI_DEVICE_ID_MATCH_REVISION	(4)
+
 struct parisc_device_id {
 	__u8	hw_type;	/* 5 bits used */
 	__u8	hversion_rev;	/* 4 bits */
