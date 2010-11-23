@@ -37,6 +37,8 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/sc16is.h>
 
+#include <linux/bmi/omap_bmi.h>
+
 #include <mach/hardware.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -59,7 +61,6 @@
 #define GPMC_CS_SIZE   0x30
 
 #define NAND_BLOCK_SIZE		SZ_128K
-#include <linux/regulator/fixed.h>
 
 static int bug_twl_gpio_setup(struct device *dev,
                unsigned gpio, unsigned ngpio);
@@ -197,6 +198,127 @@ static void __init bug_display_init(void)
 	gpio_direction_output(bug_dvi_device.reset_gpio, 0);
 }
 
+static struct resource bmi_slot1_resources[] = {
+  [0] = {
+    .start = 16,
+    .flags = IORESOURCE_IRQ,
+  },
+  [1] = {
+    .start = 21,
+    .flags = IORESOURCE_IRQ,
+  },
+};
+
+static struct resource bmi_slot2_resources[] = {
+  [0] = {
+    .start = 14,
+    .flags = IORESOURCE_IRQ,
+  },
+  [1] = {
+    .start = 15,
+    .flags = IORESOURCE_IRQ,
+  },
+};
+
+static struct resource bmi_slot3_resources[] = {
+  [0] = {
+    .start = 22,
+    .flags = IORESOURCE_IRQ,
+  },
+  [1] = {
+    .start = 23,
+    .flags = IORESOURCE_IRQ,
+  },
+};
+
+static struct resource bmi_slot4_resources[] = {
+  [0] = {
+    .start = 12,
+    .flags = IORESOURCE_IRQ,
+  },
+  [1] = {
+    .start = 13,
+    .flags = IORESOURCE_IRQ,
+  },
+};
+
+static struct omap_bmi_platform_data bmi_slot_pdata1 = {
+  .gpios = {220, 221, 222, 223},
+  .i2c_bus_no = 4,
+  .spi_cs = 4,  
+};
+
+static struct omap_bmi_platform_data bmi_slot_pdata2 = {
+  .gpios = {-1,},
+  .i2c_bus_no = 5,
+  .spi_cs = -1,  
+};
+
+static struct omap_bmi_platform_data bmi_slot_pdata3 = {
+  .gpios = {216, 217, 224, 225},
+  .i2c_bus_no = 6,
+  .spi_cs = 5,  
+};
+
+static struct omap_bmi_platform_data bmi_slot_pdata4 = {
+  .gpios = {212, 213, 214, 215},
+  .i2c_bus_no = 7,
+
+  .spi_cs = 6,  
+};
+
+static struct platform_device bmi_slot_devices[] = {
+  {
+    .name = "omap_bmi_slot",
+    .id = 0,
+    .num_resources = ARRAY_SIZE(bmi_slot1_resources),
+    .resource = bmi_slot1_resources,
+    .dev = {
+      .platform_data = &bmi_slot_pdata1,
+    },
+  },
+  {
+    .name = "omap_bmi_slot",
+    .id = 1,
+    .num_resources = ARRAY_SIZE(bmi_slot2_resources),
+    .resource = bmi_slot2_resources,
+    .dev = {
+      .platform_data = &bmi_slot_pdata2,
+    },
+  },
+  {
+    .name = "omap_bmi_slot",
+    .id = 2,
+    .num_resources = ARRAY_SIZE(bmi_slot3_resources),
+    .resource = bmi_slot3_resources,
+    .dev = {
+      .platform_data = &bmi_slot_pdata3,
+    },
+  },
+  {
+    .name = "omap_bmi_slot",
+    .id = 3,
+    .num_resources = ARRAY_SIZE(bmi_slot4_resources),
+    .resource = bmi_slot4_resources,
+    .dev = {
+      .platform_data = &bmi_slot_pdata4,
+    },
+  },    
+};
+
+
+static void omap_init_bmi_slots(void)
+
+{
+  int i;
+
+  for (i = 0; i < ARRAY_SIZE(bmi_slot_devices); i++) {
+    if (platform_device_register(&bmi_slot_devices[i]) < 0)
+      dev_err(&bmi_slot_devices[i].dev,
+	      "Unable to register BMI slot\n");
+  }
+}
+
 static int bug_spi_uart_gpio_setup(struct spi_device *spi, unsigned gpio, unsigned ngpio, void *context)
 {
 	int r;
@@ -307,7 +429,7 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc 		= 3,
 		.wires 		= 1,
-		.nonremovable	= true,
+		//.nonremovable	= true,
 		.gpio_cd	= -EINVAL,
 		.gpio_wp	= -EINVAL,
 	},
@@ -315,20 +437,84 @@ static struct omap2_hsmmc_info mmc[] = {
 	{}	/* Terminator */
 };
 
+/* Supply enable for digital video outputs */
+static struct regulator_consumer_supply bug_1_8_supplies[] = {
 /*
-static struct regulator_consumer_supply bug_vmmc_supplies[] = {
 	{
-		.supply			= "vmmc",
+		.supply= "vdds_dsi",
+		//.dev= &omap3_bug_dss_device.dev,
 	},
-	{
-		.supply			= "vmmc",
-	},
-	{
-		.supply			= "vmmc",
-	},
-
-};
 */
+	{
+		.supply = "vmmc",
+	},
+};
+
+static struct regulator_init_data bug_fixed_1_8_data = {
+	.constraints = {
+		.min_uV			= 1800000,
+		.max_uV			= 1800000,
+		.apply_uV		= true,
+		.boot_on 		= true,
+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
+			| REGULATOR_MODE_STANDBY,
+		.always_on 		= true,
+	},
+	.num_consumer_supplies= ARRAY_SIZE(bug_1_8_supplies),
+	.consumer_supplies= bug_1_8_supplies,
+};
+
+static struct fixed_voltage_config bug_fixed_1_8_pdata = {
+	.supply_name   = "V1.8",
+	.microvolts    = 1800000,
+	.init_data     = &bug_fixed_1_8_data,
+	.gpio          = -1,
+};
+
+static struct platform_device bug_fixed_1_8 = {
+	.name          = "reg-fixed-voltage",
+	.id            = 1,
+	.dev = {
+		.platform_data = &bug_fixed_1_8_pdata,
+	},
+};
+
+static struct regulator_consumer_supply bug_sd_supplies[] = {
+	{
+		.supply = "vmmc",
+	},
+};
+
+static struct regulator_init_data bug_fixed_sd_data = {
+	.constraints = {
+		.min_uV			= 3300000,
+		.max_uV			= 3300000,
+		.apply_uV		= true,
+		.boot_on 		= true,
+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
+			| REGULATOR_MODE_STANDBY,
+
+		.always_on 		= true,
+	},
+	.num_consumer_supplies= ARRAY_SIZE(bug_sd_supplies),
+	.consumer_supplies= bug_sd_supplies,
+};
+
+static struct fixed_voltage_config bug_fixed_sd_pdata = {
+	.supply_name   = "SD",
+	.microvolts    = 3300000,
+	.init_data     = &bug_fixed_sd_data,
+	.gpio          = -1,
+};
+
+static struct platform_device bug_fixed_sd = {
+	.name          = "reg-fixed-voltage",
+	.id            = 0,
+	.dev = {
+		.platform_data = &bug_fixed_sd_pdata,
+	},
+};
+
 static struct regulator_consumer_supply bug_vmmc1_supply = {
 	.supply			= "vmmc",
 };
@@ -346,6 +532,8 @@ static int bug_twl_gpio_setup(struct device *dev,
 	omap2_hsmmc_init(mmc);
 	
 	bug_vmmc1_supply.dev = mmc[0].dev;
+	bug_sd_supplies[0].dev = mmc[1].dev;
+	bug_1_8_supplies[0].dev = mmc[2].dev;
 
 	/* link regulators to MMC adapters */
 	/*
@@ -596,8 +784,8 @@ static void __init omap3_bug_init_irq(void)
 }
 
 static struct platform_device *omap3_bug_devices[] __initdata = {
-	&leds_gpio,
-	&keys_gpio,
+	&bug_fixed_sd,
+	&bug_fixed_1_8,
 	//&bug_dss_device,
 };
 
@@ -679,7 +867,7 @@ static void __init bug_flash_init(void)
 
 static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
 
-	.port_mode[0] = EHCI_HCD_OMAP_MODE_PHY,
+	.port_mode[0] = EHCI_HCD_OMAP_MODE_UNKNOWN,
 	.port_mode[1] = EHCI_HCD_OMAP_MODE_PHY,
 	.port_mode[2] = EHCI_HCD_OMAP_MODE_UNKNOWN,
 
@@ -709,16 +897,17 @@ static void __init omap3_bug_init(void)
 	omap3_bug_i2c_init();
 	spi_register_board_info(bug_spi_board_info,
 				ARRAY_SIZE(bug_spi_board_info));
-	/*
+	
 	platform_add_devices(omap3_bug_devices,
 			ARRAY_SIZE(omap3_bug_devices));
-	*/		
+			
 	omap_serial_init();
 
 	usb_musb_init(&musb_board_data);
 	usb_ehci_init(&ehci_pdata);
 	bug_flash_init();
 
+	omap_init_bmi_slots();
 	/* Ensure SDRC pins are mux'd for self-refresh */
 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
@@ -728,7 +917,7 @@ static void __init omap3_bug_init(void)
 MACHINE_START(OMAP3EVM, "OMAP3 BUGBase")
 	/* Maintainer: Matt Isaacs - http://buglabs.net */
 	.phys_io	= 0x48000000,
-	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
+	.io_pg_offst	= ((0xfa000000) >> 18) & 0xfffc,
 	.boot_params	= 0x80000100,
 	.map_io		= omap3_map_io,
 	.reserve	= omap_reserve,
