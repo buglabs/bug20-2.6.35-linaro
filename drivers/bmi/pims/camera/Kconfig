@@ -1,0 +1,27 @@
+config BMI_CAMERA
+	tristate "BMI Camera"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  This is the BMI Camera driver.
+
+choice
+        prompt "Select Camera"
+        depends on (BMI_CAMERA)
+
+#config BMI_CAMERA_VS6624
+#        tristate "ST VS6624 camera support"
+#        ---help---
+#          If you plan to use the ST VS6624 Camera with your BUG system, say Y here.
+#
+#config BMI_CAMERA_OV2640
+#        tristate "Omnivision OV2640 camera support"
+#        ---help---
+#          If you plan to use the Omnivision OV2640 Camera with your BUG system, say Y here.
+#
+config BMI_CAMERA_LI3M02CM
+        tristate "Leopard Imaging 3M02CM / Aptina MT9T111 camera support"
+        ---help---
+          If you plan to use the "Leopard Imaging 3M02CM / Aptina MT9T11 camera with your BUG system, say Y here.
+
+endchoice

@@ -1,0 +1,107 @@
+#
+# BMI PIMS
+#
+
+config BMI_PIMS
+	tristate "BMI_PIMS"
+	depends on BMI
+	default n
+	---help---
+	  BMI plug-in module support
+
+	  This driver must be built as a module.
+
+menu "BMI PIMS"
+
+config BUG_FACTORY_TEST
+	tristate "BUG_FACTORY_TEST"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI FACTORY Test plug-in module
+
+	  This driver can also be built as a module.
+
+config BMI_GPS
+	tristate "BMI_GPS"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI GPS plug-in module
+
+	  This driver can also be built as a module.
+
+source "drivers/bmi/pims/mdacc/Kconfig"
+
+config BMI_LCD
+	tristate "BMI LCD Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  This is the BMI driver for the LCD Plug-In Module.
+
+config BMI_VIDEO
+	tristate "BMI Video Module support"
+	depends on BMI_PIMS && TFP410 && THS8200
+	default n
+	---help---
+	  This is the BMI driver for the Video Plug-In Module (DVI/VGA).
+
+config BMI_AUDIO
+	tristate "BMI Bus Audio Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  This is the BMI bus driver for the Audio Plug-In Module.
+
+	  Select M to make a kernel-loadable module.
+
+source "drivers/bmi/pims/camera/Kconfig"
+
+config BMI_VH
+	tristate "BMI von Hippel Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI von Hippel plug-in module
+
+	  This driver can also be built as a module.
+
+config BMI_SENSOR
+        tristate "BMI Sensor Module support"
+        depends on BMI_PIMS
+        default n
+        ---help---
+          BMI Sensor plug-in module
+
+          This driver can also be built as a module.
+
+config BMI_ZB
+	tristate "BMI ZigBee Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI ZigBee plug-in module
+
+	  This driver can also be built as a module.
+
+config BMI_GSM
+	tristate "BMI GSM/UMTS Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI von Hippel plug-in module
+
+	  This driver can also be built as a module.
+
+config BMI_ACCNT
+        tristate "Accenture BMI Accelerometer Module support"
+        depends on BMI_PIMS
+        default n
+        ---help---
+          BMI Sensor plug-in module
+
+          This driver can also be built as a module.
+
+endmenu
+

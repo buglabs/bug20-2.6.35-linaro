@@ -1,0 +1,28 @@
+#
+# BMI Slot Drivers
+#
+
+menu "BMI Hardware Slot support"
+
+config BUG_SLOT
+	tristate "Buglabs BUGBase BMI Slots"
+	default 'n'
+	depends on BMI && MACH_BUG
+	help
+	  If you say yes to this option, support will be included for the Buglabs BUGBase BMI Slot/Module Ports.
+
+config BEAGLE_SLOT
+       	tristate "TI BeagBoard BMI Slots"
+	default 'n'
+	depends on BMI
+	help
+	  If you say yes to this option, support will be included for the BeagleBoard Slot.
+
+config OMAP_BUG_SLOT
+       	tristate "Buglabs 2.0 BUGbase BMI Slots"
+	default 'n'
+	depends on BMI
+	help
+	  If you say yes to this option, support will be included for the BeagleBoard Slot.
+
+endmenu
