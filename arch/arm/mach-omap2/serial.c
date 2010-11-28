@@ -495,7 +495,7 @@ static void omap_uart_idle_init(struct omap_uart_state *uart)
 	omap_uart_smart_idle_enable(uart, 0);
 
 	if (cpu_is_omap34xx()) {
-		u32 mod = (uart->num == 2) ? OMAP3430_PER_MOD : CORE_MOD;
+		u32 mod = (uart->num > 1) ? OMAP3430_PER_MOD : CORE_MOD;
 		u32 wk_mask = 0;
 		u32 padconf = 0;
 
@@ -513,6 +513,10 @@ static void omap_uart_idle_init(struct omap_uart_state *uart)
 		case 2:
 			wk_mask = OMAP3430_ST_UART3_MASK;
 			padconf = 0x19e;
+			break;
+		case 3:
+			wk_mask = OMAP3630_ST_UART4_MASK;
+			padconf = 0x0d2;
 			break;
 		}
 		uart->wk_mask = wk_mask;
@@ -608,6 +612,11 @@ static DEVICE_ATTR(sleep_timeout, 0644, sleep_timeout_show,
 #define DEV_CREATE_FILE(dev, attr) WARN_ON(device_create_file(dev, attr))
 #else
 static inline void omap_uart_idle_init(struct omap_uart_state *uart) {}
+static void omap_uart_block_sleep(struct omap_uart_state *uart)
+{
+	/* Needed to enable UART clocks when built without CONFIG_PM */
+	omap_uart_enable_clocks(uart);
+}
 #define DEV_CREATE_FILE(dev, attr)
 #endif /* CONFIG_PM */
 
