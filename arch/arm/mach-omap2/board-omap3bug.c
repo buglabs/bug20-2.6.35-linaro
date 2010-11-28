@@ -128,75 +128,168 @@ static struct platform_device bug_nand_device = {
 };
 
 /* DSS */
-
-static int bug_enable_dvi(struct omap_dss_device *dssdev)
+static void __init omap3_bug_display_init(void)
 {
-	if (gpio_is_valid(dssdev->reset_gpio))
-		gpio_set_value(dssdev->reset_gpio, 1);
+	int r;
+	
+	r = gpio_request(90,  "lcd_shutdown");
+	r |= gpio_request(93,  "lcd_reset");
+	r |= gpio_request(10,  "dvi_reset");
+	r |= gpio_request(92,  "acc_reset");
+	if (r) {
+	  printk(KERN_INFO "display_init: gpio request failed...\n");
+	}
+	return;
+}
+
+static int omap3_bug_panel_enable_lcd(struct omap_dss_device *display)
+{
+	omap_mux_init_signal("dss_data18.mcspi3_clk", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data19.mcspi3_simo", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data20.gpio_90", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data21.mcspi3_cs0", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data22.gpio_92", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data23.gpio_93", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("etk_d1.gpio_15", OMAP_PIN_INPUT_PULLUP);
+/*
+  	omap_cfg_reg (LCD_MCSPI3_CLK);
+	omap_cfg_reg (LCD_MCSPI3_SIMO);
+	omap_cfg_reg (LCD_SHUTDOWN);
+	omap_cfg_reg (LCD_MCSPI3_CS);
+	omap_cfg_reg (ACC_RESET);
+	omap_cfg_reg (LCD_TP_RESET);
+	omap_cfg_reg (ACC_INT);
+*/
+	gpio_direction_output(90,1);
+	gpio_direction_output(92,1);
 
 	return 0;
 }
 
-static void bug_disable_dvi(struct omap_dss_device *dssdev)
+static void omap3_bug_panel_disable_lcd(struct omap_dss_device *display)
 {
-	if (gpio_is_valid(dssdev->reset_gpio))
-		gpio_set_value(dssdev->reset_gpio, 0);
+	//gpio_direction_output(VIDEO_PIM_SW_ENABLE, 1);
+
+	// Mux these pins to safe mode
+	omap_mux_init_signal("dss_data18.safe_mode", 0);
+	omap_mux_init_signal("dss_data19.safe_mode", 0);
+	omap_mux_init_signal("dss_data20.safe_mode", 0);
+	omap_mux_init_signal("dss_data21.safe_mode", 0);
+	omap_mux_init_signal("dss_data22.safe_mode", 0);
+	omap_mux_init_signal("dss_data23.safe_mode", 0);
+	omap_mux_init_signal("etk_d1.gpio_15", 0);
+/*
+  	omap_cfg_reg (LCD_MCSPI3_CLK);
+
+  	omap_cfg_reg (DSS_D18);
+	omap_cfg_reg (DSS_D19);
+	omap_cfg_reg (DSS_D20);
+	omap_cfg_reg (DSS_D21);
+	omap_cfg_reg (DSS_D21);
+	omap_cfg_reg (DSS_D22);
+	omap_cfg_reg (DSS_D23);
+*/
+	return;
 }
 
-static struct omap_dss_device bug_dvi_device = {
+
+static struct omap_dss_device omap3_bug_lcd_device = {
 	.type = OMAP_DISPLAY_TYPE_DPI,
-	.name = "dvi",
-	.driver_name = "generic_panel",
-	.phy.dpi.data_lines = 24,
-	.reset_gpio = 170,
-	.platform_enable = bug_enable_dvi,
-	.platform_disable = bug_disable_dvi,
+	.name = "lcd",
+	.driver_name = "sharp_spi_panel",
+	.phy.dpi.data_lines = 18,
+	.reset_gpio = 90,
+	.platform_enable = omap3_bug_panel_enable_lcd,
+	.platform_disable = omap3_bug_panel_disable_lcd,
 };
 
-static struct omap_dss_device bug_tv_device = {
-	.name = "tv",
-	.driver_name = "venc",
-	.type = OMAP_DISPLAY_TYPE_VENC,
-	.phy.venc.type = OMAP_DSS_VENC_TYPE_SVIDEO,
+static int omap3_bug_panel_enable_dvi(struct omap_dss_device *display)
+{
+	omap_mux_init_signal("dss_data18", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data19", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data20", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data21", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data22", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data23", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("etk_d1.gpio_15", 0);
+	omap_mux_init_signal("sys_clkout1.gpio_10", OMAP_PIN_OUTPUT);
+
+/*
+	omap_cfg_reg (DSS_DATA_18);
+	omap_cfg_reg (DSS_DATA_19);
+	omap_cfg_reg (DSS_DATA_20);
+	omap_cfg_reg (DSS_DATA_21);
+	omap_cfg_reg (DSS_DATA_22);
+	omap_cfg_reg (DSS_DATA_23);
+	omap_cfg_reg (GPIO_10);
+*/	
+/*
+	gpio_direction_output(VIDEO_PIM_ENABLE, 1);
+	gpio_direction_output(VIDEO_PIM_SW_ENABLE, 0);
+*/
+	return 0;
+}
+
+static void omap3_bug_panel_disable_dvi(struct omap_dss_device *display)
+{
+	//gpio_direction_output(VIDEO_PIM_SW_ENABLE, 1);
+
+	// Mux these pins to safe mode
+	omap_mux_init_signal("dss_data18.safe_mode", 0);
+	omap_mux_init_signal("dss_data19.safe_mode", 0);
+	omap_mux_init_signal("dss_data20.safe_mode", 0);
+	omap_mux_init_signal("dss_data21.safe_mode", 0);
+	omap_mux_init_signal("dss_data22.safe_mode", 0);
+	omap_mux_init_signal("dss_data23.safe_mode", 0);
+	omap_mux_init_signal("etk_d1.gpio_15", 0);
+/*
+  	omap_cfg_reg (DSS_D18);
+	omap_cfg_reg (DSS_D19);
+	omap_cfg_reg (DSS_D20);
+	omap_cfg_reg (DSS_D21);
+	omap_cfg_reg (DSS_D22);
+	omap_cfg_reg (DSS_D23);
+*/
+	return;
+}
+
+static struct omap_dss_device omap3_bug_vga_device = {
+	.type                = OMAP_DISPLAY_TYPE_DPI,
+	.name                = "vga",
+	.driver_name         = "vga_panel",
+	.phy.dpi.data_lines  = 24,
+	.platform_enable     = omap3_bug_panel_enable_dvi,
+	.platform_disable    = omap3_bug_panel_disable_dvi,
 };
 
-static struct omap_dss_device *bug_dss_devices[] = {
-	&bug_dvi_device,
-	&bug_tv_device,
+static struct omap_dss_device omap3_bug_dvi_device = {
+	.type                = OMAP_DISPLAY_TYPE_DPI,
+	.name                = "dvi",
+	.driver_name         = "generic_panel",
+	.phy.dpi.data_lines  = 24,
+	.platform_enable     = omap3_bug_panel_enable_dvi,
+	.platform_disable    = omap3_bug_panel_disable_dvi,
 };
 
-static struct omap_dss_board_info bug_dss_data = {
-	.num_devices = ARRAY_SIZE(bug_dss_devices),
-	.devices = bug_dss_devices,
-	.default_device = &bug_dvi_device,
+struct omap_dss_device *omap3_bug_display_devices[] = {
+        &omap3_bug_lcd_device,
+	&omap3_bug_dvi_device,
+	&omap3_bug_vga_device,
 };
 
-static struct platform_device bug_dss_device = {
-	.name          = "omapdss",
-	.id            = -1,
-	.dev            = {
-		.platform_data = &bug_dss_data,
+static struct omap_dss_board_info omap3_bug_dss_data = {
+	.num_devices	     = ARRAY_SIZE(omap3_bug_display_devices),
+	.devices	     = omap3_bug_display_devices,
+	.default_device	     = &omap3_bug_dvi_device,
+};
+
+static struct platform_device omap3_bug_dss_device = {
+	.name	 	     = "omapdss",
+	.id		     = -1,
+	.dev                 = {
+		.platform_data = &omap3_bug_dss_data,
 	},
 };
-
-static struct regulator_consumer_supply bug_vdac_supply =
-	REGULATOR_SUPPLY("vdda_dac", "omapdss");
-
-static struct regulator_consumer_supply bug_vdvi_supply =
-	REGULATOR_SUPPLY("vdds_dsi", "omapdss");
-
-static void __init bug_display_init(void)
-{
-	int r;
-
-	r = gpio_request(bug_dvi_device.reset_gpio, "DVI reset");
-	if (r < 0) {
-		printk(KERN_ERR "Unable to get DVI reset GPIO\n");
-		return;
-	}
-
-	gpio_direction_output(bug_dvi_device.reset_gpio, 0);
-}
 
 static struct resource bmi_slot1_resources[] = {
   [0] = {
@@ -400,8 +493,7 @@ static struct spi_board_info __initdata bug_spi_board_info[] = {
     .mode                       = SPI_MODE_0,
     .max_speed_hz               = 2000000,
     .platform_data              = &bugbase_sc_data,
-  },
-/*  
+  },  
   {
     .modalias			= "spi-lcd",
     .bus_num			= 3,
@@ -411,7 +503,6 @@ static struct spi_board_info __initdata bug_spi_board_info[] = {
     .platform_data 		= &omap3_bug_lcd_device, //&lcd_mcspi_config,
     .mode			= SPI_MODE_0,
   },
-*/  
 };
 
 static struct omap2_hsmmc_info mmc[] = {
@@ -439,14 +530,12 @@ static struct omap2_hsmmc_info mmc[] = {
 
 /* Supply enable for digital video outputs */
 static struct regulator_consumer_supply bug_1_8_supplies[] = {
-/*
 	{
 		.supply= "vdds_dsi",
-		//.dev= &omap3_bug_dss_device.dev,
+		.dev= &omap3_bug_dss_device.dev,
 	},
-*/
 	{
-		.supply = "vmmc",
+		.supply = "vmmc2",
 	},
 };
 
@@ -592,35 +681,6 @@ static struct regulator_init_data bug_vaux2 = {
 	.consumer_supplies	= &bug_vaux2_supply,
 };
 
-/* VDAC for DSS driving S-Video (8 mA unloaded, max 65 mA) */
-static struct regulator_init_data bug_vdac = {
-	.constraints = {
-		.min_uV			= 1800000,
-		.max_uV			= 1800000,
-		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-					| REGULATOR_MODE_STANDBY,
-		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-					| REGULATOR_CHANGE_STATUS,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &bug_vdac_supply,
-};
-
-/* VPLL2 for digital video outputs */
-static struct regulator_init_data bug_vpll2 = {
-	.constraints = {
-		.name			= "VDVI",
-		.min_uV			= 1800000,
-		.max_uV			= 1800000,
-		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-					| REGULATOR_MODE_STANDBY,
-		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-					| REGULATOR_CHANGE_STATUS,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &bug_vdvi_supply,
-};
-
 static struct twl4030_usb_data bug_usb_data = {
 	.usb_mode	= T2_USB_MODE_ULPI,
 };
@@ -644,8 +704,6 @@ static struct twl4030_platform_data bug_twldata = {
 	.codec		= &bug_codec_data,
 	.vmmc1		= &bug_vmmc1,
 	.vaux2		= &bug_vaux2,
-	.vdac		= &bug_vdac,
-	.vpll2		= &bug_vpll2,
 };
 
 static int bug_ioexp_gpio_setup(struct i2c_client *client,
@@ -786,7 +844,7 @@ static void __init omap3_bug_init_irq(void)
 static struct platform_device *omap3_bug_devices[] __initdata = {
 	&bug_fixed_sd,
 	&bug_fixed_1_8,
-	//&bug_dss_device,
+	&omap3_bug_dss_device,
 };
 
 void gen_gpio_settings(void)
@@ -902,7 +960,7 @@ static void __init omap3_bug_init(void)
 			ARRAY_SIZE(omap3_bug_devices));
 			
 	omap_serial_init();
-
+	omap3_bug_display_init();
 	usb_musb_init(&musb_board_data);
 	usb_ehci_init(&ehci_pdata);
 	bug_flash_init();
