@@ -972,7 +972,7 @@ static void __init omap3_bug_init(void)
 	gen_gpio_settings();
 }
 
-MACHINE_START(OMAP3EVM, "OMAP3 BUGBase")
+MACHINE_START(BUG20, "OMAP3 BUGBase")
 	/* Maintainer: Matt Isaacs - http://buglabs.net */
 	.phys_io	= 0x48000000,
 	.io_pg_offst	= ((0xfa000000) >> 18) & 0xfffc,
