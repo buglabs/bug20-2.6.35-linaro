@@ -144,6 +144,7 @@ static void __init omap3_bug_display_init(void)
 
 static int omap3_bug_panel_enable_lcd(struct omap_dss_device *display)
 {
+	printk(KERN_INFO "%s\n", __FUNCTION__);
 	omap_mux_init_signal("dss_data18.mcspi3_clk", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("dss_data19.mcspi3_simo", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("dss_data20.gpio_90", OMAP_PIN_OUTPUT);
@@ -171,6 +172,7 @@ static void omap3_bug_panel_disable_lcd(struct omap_dss_device *display)
 	//gpio_direction_output(VIDEO_PIM_SW_ENABLE, 1);
 
 	// Mux these pins to safe mode
+	printk(KERN_INFO "%s\n", __FUNCTION__);
 	omap_mux_init_signal("dss_data18.safe_mode", 0);
 	omap_mux_init_signal("dss_data19.safe_mode", 0);
 	omap_mux_init_signal("dss_data20.safe_mode", 0);
@@ -205,24 +207,15 @@ static struct omap_dss_device omap3_bug_lcd_device = {
 
 static int omap3_bug_panel_enable_dvi(struct omap_dss_device *display)
 {
-	omap_mux_init_signal("dss_data18", OMAP_PIN_OUTPUT);
-	omap_mux_init_signal("dss_data19", OMAP_PIN_OUTPUT);
-	omap_mux_init_signal("dss_data20", OMAP_PIN_OUTPUT);
-	omap_mux_init_signal("dss_data21", OMAP_PIN_OUTPUT);
-	omap_mux_init_signal("dss_data22", OMAP_PIN_OUTPUT);
-	omap_mux_init_signal("dss_data23", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data18.dss_data18", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data19.dss_data19", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data20.dss_data20", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data21.dss_data21", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data22.dss_data22", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("dss_data23.dss_data23", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("etk_d1.gpio_15", 0);
 	omap_mux_init_signal("sys_clkout1.gpio_10", OMAP_PIN_OUTPUT);
 
-/*
-	omap_cfg_reg (DSS_DATA_18);
-	omap_cfg_reg (DSS_DATA_19);
-	omap_cfg_reg (DSS_DATA_20);
-	omap_cfg_reg (DSS_DATA_21);
-	omap_cfg_reg (DSS_DATA_22);
-	omap_cfg_reg (DSS_DATA_23);
-	omap_cfg_reg (GPIO_10);
-*/	
 /*
 	gpio_direction_output(VIDEO_PIM_ENABLE, 1);
 	gpio_direction_output(VIDEO_PIM_SW_ENABLE, 0);
@@ -233,7 +226,7 @@ static int omap3_bug_panel_enable_dvi(struct omap_dss_device *display)
 static void omap3_bug_panel_disable_dvi(struct omap_dss_device *display)
 {
 	//gpio_direction_output(VIDEO_PIM_SW_ENABLE, 1);
-
+	
 	// Mux these pins to safe mode
 	omap_mux_init_signal("dss_data18.safe_mode", 0);
 	omap_mux_init_signal("dss_data19.safe_mode", 0);
@@ -242,14 +235,6 @@ static void omap3_bug_panel_disable_dvi(struct omap_dss_device *display)
 	omap_mux_init_signal("dss_data22.safe_mode", 0);
 	omap_mux_init_signal("dss_data23.safe_mode", 0);
 	omap_mux_init_signal("etk_d1.gpio_15", 0);
-/*
-  	omap_cfg_reg (DSS_D18);
-	omap_cfg_reg (DSS_D19);
-	omap_cfg_reg (DSS_D20);
-	omap_cfg_reg (DSS_D21);
-	omap_cfg_reg (DSS_D22);
-	omap_cfg_reg (DSS_D23);
-*/
 	return;
 }
 
@@ -280,7 +265,7 @@ struct omap_dss_device *omap3_bug_display_devices[] = {
 static struct omap_dss_board_info omap3_bug_dss_data = {
 	.num_devices	     = ARRAY_SIZE(omap3_bug_display_devices),
 	.devices	     = omap3_bug_display_devices,
-	.default_device	     = &omap3_bug_dvi_device,
+	.default_device	     = &omap3_bug_lcd_device,
 };
 
 static struct platform_device omap3_bug_dss_device = {
@@ -516,6 +501,7 @@ static struct omap2_hsmmc_info mmc[] = {
 	  	.mmc 		= 2,
 		.wires 		= 4,
 		.gpio_cd	= 170,
+		.gpio_wp	= -EINVAL,
 	},
 	{
 		.mmc 		= 3,
@@ -633,7 +619,7 @@ static int bug_twl_gpio_setup(struct device *dev,
 
 	gpio_request(gpio + 1, "usb_hub");
 	gpio_direction_output(gpio + 1, 1);
-
+	gpio_free(gpio + 1);
 	return 0;
 }
 
@@ -666,7 +652,6 @@ static struct regulator_init_data bug_vmmc1 = {
 	.consumer_supplies	= &bug_vmmc1_supply,
 };
 
-/* VSIM for MMC1 pins DAT4..DAT7 (2 mA, plus card == max 50 mA) */
 static struct regulator_init_data bug_vaux2 = {
 	.constraints = {
 		.min_uV			= 1800000,
@@ -936,7 +921,7 @@ static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
 };
 
 #ifdef CONFIG_OMAP_MUX
-static struct omap_board_mux board_mux[] __initdata = {
+static struct omap_board_mux board_mux[] = {
 	{ .reg_offset = OMAP_MUX_TERMINATOR },
 };
 #else
@@ -967,6 +952,7 @@ static void __init omap3_bug_init(void)
 
 	omap_init_bmi_slots();
 	/* Ensure SDRC pins are mux'd for self-refresh */
+	omap_mux_init_signal("csi2_dy0.gpio_113", OMAP_PIN_INPUT);
 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
 	gen_gpio_settings();

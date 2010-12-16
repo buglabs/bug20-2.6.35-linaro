@@ -127,12 +127,14 @@ int __init omap_mux_init_gpio(int gpio, int val)
 	return 0;
 }
 
-int __init omap_mux_init_signal(char *muxname, int val)
+//int __init omap_mux_init_signal(char *muxname, int val)
+int omap_mux_init_signal(char *muxname, int val)
 {
 	struct omap_mux_entry *e;
 	char *m0_name = NULL, *mode_name = NULL;
 	int found = 0;
 
+	muxname = kstrdup(muxname, GFP_KERNEL);
 	mode_name = strchr(muxname, '.');
 	if (mode_name) {
 		*mode_name = '\0';

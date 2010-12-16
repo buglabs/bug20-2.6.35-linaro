@@ -189,56 +189,64 @@ static void sharp_spi_panel_remove(struct omap_dss_device *dssdev)
 
 static int sharp_spi_panel_enable(struct omap_dss_device *dssdev)
 {
-  int r = 0;
-  int i;
-  u16 data = 0x00;
-  int nreset_gpio = dssdev->reset_gpio;
-  struct sharp_panel_device *md = dev_get_drvdata(&dssdev->dev);
+	int r = 0;
+	int i;
+	u16 data = 0x00;
+	int nreset_gpio = dssdev->reset_gpio;
+	struct sharp_panel_device *md = dev_get_drvdata(&dssdev->dev);
 
-  //dev_info(&dssdev->dev, "spi_lcd_panel_enable...\n");
+	//dev_info(&dssdev->dev, "spi_lcd_panel_enable...\n");
 
-  mutex_lock(&md->mutex);
+	mutex_lock(&md->mutex);
 
-  if (dssdev->platform_enable)
-    {
-      dev_info(&dssdev->dev, "attempting platform enable...\n");
-      r = dssdev->platform_enable(dssdev);
-      if (r)
+	if (dssdev->platform_enable)
 	{
-	  dev_warn(&dssdev->dev, "platform enable failed...\n");
-	  goto exit;
+		dev_info(&dssdev->dev, "attempting platform enable...\n");
+		r = dssdev->platform_enable(dssdev);
+		if (r)
+		{
+			dev_warn(&dssdev->dev, "platform enable failed...\n");
+			goto exit;
+		}
+		md->spi->bits_per_word = 9;
+		spi_setup (md->spi);
+
+		mdelay (1);
+		if (gpio_is_valid(nreset_gpio)) 
+		{
+			//dev_info(&dssdev->dev, "taking lcd out of reset...\n",nreset_gpio);
+			gpio_direction_output(93, 1);
+			udelay(100);
+			gpio_direction_output(90,0);
+			udelay(100);
+		}
+		else
+			printk(KERN_INFO "%s\n", __FUNCTION__);
+
+		for (i =0; i<81; i++)
+		{
+			data = panel_init_seq[i];
+			panel_write (md->spi, (u8 *)&data, 2);
+		}
+		mdelay (1);
+
 	}
-      md->spi->bits_per_word = 9;
-      spi_setup (md->spi);
 
-      mdelay (1);
-      if (gpio_is_valid(nreset_gpio))
-	//dev_info(&dssdev->dev, "taking lcd out of reset...\n",nreset_gpio);
-	gpio_direction_output(93, 1);
-	udelay(100);
-	gpio_direction_output(90,0);
-	udelay(100);
-      for (i =0; i<81; i++)
-	{
-	  data = panel_init_seq[i];
-	  panel_write (md->spi, (u8 *)&data, 2);
+	msleep(50); // wait for power up
+
+	omapdss_dpi_display_enable(dssdev);
+	if (md->enabled) {
+		mutex_unlock(&md->mutex);
+		return 0;
 	}
-      mdelay (1);
-
-    }
-
-  msleep(50); // wait for power up
-
-  if (md->enabled) {
-    mutex_unlock(&md->mutex);
-    return 0;
-  }
-
-  md->enabled = 1;
-
- exit:
-  mutex_unlock(&md->mutex);
-  return 0;
+	dssdev->state = OMAP_DSS_DISPLAY_ACTIVE;
+	md->enabled = 1;
+	mutex_unlock(&md->mutex);
+	return 0;
+exit:
+	mutex_unlock(&md->mutex);
+	omapdss_dpi_display_disable(dssdev);
+	return -1;
 }
 
 static void sharp_spi_panel_disable(struct omap_dss_device *dssdev)
@@ -247,6 +255,7 @@ static void sharp_spi_panel_disable(struct omap_dss_device *dssdev)
 
 	dev_info(&dssdev->dev, "sharp_spi_lcd_disable\n");
 
+	omapdss_dpi_display_disable(dssdev);
 	mutex_lock(&md->mutex);
 
 	if (!md->enabled) {
@@ -255,7 +264,7 @@ static void sharp_spi_panel_disable(struct omap_dss_device *dssdev)
 	}
 
 	md->enabled = 0;
-
+	dssdev->state = OMAP_DSS_DISPLAY_DISABLED;
 	if (dssdev->platform_disable)
 		dssdev->platform_disable(dssdev);
 
