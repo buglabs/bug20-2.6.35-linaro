@@ -240,7 +240,7 @@ int bmi_video_probe(struct bmi_device *bdev)
 		omap_dss_get_device(dssdev);
 
 		if (dssdev->state)
-		        dssdev->disable(dssdev);
+		        dssdev->platform_disable(dssdev);
 		
 		if (strnicmp(dssdev->name, "dvi", 3) == 0)
 		        dvi_disp = dssdev;
@@ -260,7 +260,7 @@ int bmi_video_probe(struct bmi_device *bdev)
 	// bind driver and bmi_device 
 	video->bdev = bdev;
 
-	err = sysfs_create_file(&bdev->dev.kobj, &dev_attr_vmode);
+	err = sysfs_create_file(&bdev->dev.kobj, &dev_attr_vmode.attr);
 	if (err < 0)
 	        printk(KERN_ERR "Error creating SYSFS entries...\n");
 
@@ -313,12 +313,12 @@ void bmi_video_remove(struct bmi_device *bdev)
 	if (video->vmode == DVI)
 	    tfp410_disable(video->dvi_controller);
 	if (dvi_disp->state)
-	        dvi_disp->disable(dvi_disp);
+	        dvi_disp->platform_disable(dvi_disp);
 
 	if (video->vmode == VGA)
 	    ths8200_disable(video->vga_controller);
 	if (vga_disp->state)
-	        vga_disp->disable(vga_disp);
+	        vga_disp->platform_disable(vga_disp);
 
 	i2c_unregister_device(video->dvi_controller);
 	i2c_unregister_device(video->vga_controller);
@@ -327,7 +327,7 @@ void bmi_video_remove(struct bmi_device *bdev)
 	for (i = 0; i < 4; i++)
 	  bmi_slot_gpio_direction_in(slot, i);
 
-	sysfs_remove_file(&bdev->dev.kobj, &dev_attr_vmode);
+	sysfs_remove_file(&bdev->dev.kobj, &dev_attr_vmode.attr);
 
 	bmi_class = bmi_get_class ();
 	device_destroy (bmi_class, MKDEV(major, slot));
@@ -358,7 +358,7 @@ static void enable_vga(struct bmi_video *video)
 
 	//disable dvi (dss)
 	if (dvi_disp->state)
-	    dvi_disp->disable(dvi_disp);
+	    dvi_disp->platform_disable(dvi_disp);
 
 	//set omapfb
 	info = registered_fb[0];
@@ -375,7 +375,7 @@ static void enable_vga(struct bmi_video *video)
 
 	//enable vga (dss)
 	if (vga_disp->state != 1)
-	        vga_disp->enable(vga_disp);
+	        vga_disp->platform_enable(vga_disp);
 
 	//init vga (ths)
 	ths8200_init(video->vga_controller);
@@ -394,7 +394,7 @@ static void enable_dvi(struct bmi_video *video)
 
 	//disable vga (dss)
 	if (vga_disp->state)
-	    vga_disp->disable(vga_disp);
+	    vga_disp->platform_disable(vga_disp);
 	
 	//set omapfb
 	info = registered_fb[0];
@@ -411,7 +411,7 @@ static void enable_dvi(struct bmi_video *video)
 
 	//enable dvi (dss)
 	if (dvi_disp->state != 1)
-	        dvi_disp->enable(dvi_disp);
+	        dvi_disp->platform_enable(dvi_disp);
 
 	//init dvi (tfp)
 	tfp410_init(video->dvi_controller);
