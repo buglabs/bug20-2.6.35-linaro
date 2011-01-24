@@ -126,7 +126,7 @@ static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
 		return ret;
 	}
 
-	return volt * 1000;
+	return volt;
 }
 
 /*
@@ -161,7 +161,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di)
 		}
 	}
 
-	return curr * 1000;
+	return curr;
 }
 
 /*
