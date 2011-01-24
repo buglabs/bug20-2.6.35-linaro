@@ -116,7 +116,7 @@ obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
 					   hsmmc.o
 obj-$(CONFIG_MACH_OVERO)		+= board-overo.o \
 					   hsmmc.o
-obj-$(CONFIG_MACH_OMAP3BUG)		+= board-omap3bug.o \
+obj-$(CONFIG_MACH_BUG20)		+= board-omap3bug.o \
 					   hsmmc.o					   
 obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o \
 					   hsmmc.o
