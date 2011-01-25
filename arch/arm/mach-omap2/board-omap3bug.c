@@ -740,7 +740,7 @@ static struct i2c_board_info __initdata bug_i2c2_boardinfo[] = {
 	  .platform_data = &bug_ioexp_data,
 	},
 	{
-	  I2C_BOARD_INFO("bq27200", 0x55),
+	  I2C_BOARD_INFO("bq27500", 0x55),
 	},
 };
 
