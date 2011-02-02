@@ -214,11 +214,6 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	lcd->bdev = 0;
 	lcd->open_flag = 0;
 
-	//create sysfs entries
-	err = sysfs_create_file(&bdev->dev.kobj, &dev_attr_suspend.attr);
-	if (err < 0)
-	        printk(KERN_ERR "Error creating SYSFS entries...\n");
-
 	// Get display info and disable active display
 	dssdev = NULL;
 	this_disp = NULL;
@@ -226,7 +221,7 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 		omap_dss_get_device(dssdev);
 
 		if (dssdev->state)
-		        dssdev->platform_disable(dssdev);
+		        dssdev->driver->disable(dssdev);
 
 		if (strnicmp(dssdev->name, "lcd", 3) == 0)
 		        this_disp = dssdev;
@@ -248,7 +243,7 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	  printk(KERN_ERR "bmi_lcd.c: probe: error resizing omapfb");
 
 	// Enable this display
-	this_disp->platform_enable(this_disp);
+	this_disp->driver->enable(this_disp);
 
 	// Create 1 minor device
 	dev_id = MKDEV(major, slot); 
@@ -326,10 +321,7 @@ void bmi_lcd_remove(struct bmi_device *bdev)
 	lcd->bdev = 0;
 
 	// disable display
-	this_disp->platform_disable(this_disp);
-
-	//remove sysfs entries
-	sysfs_remove_file(&bdev->dev.kobj, &dev_attr_suspend.attr);
+	this_disp->driver->disable(this_disp);
 
 
 	return;
@@ -354,7 +346,7 @@ int bmi_lcd_resume(struct device *dev)
 	lcd->tsc->dev.bus->resume(&lcd->tsc->dev);
 	lcd->acc->dev.bus->resume(&lcd->acc->dev);
 	bl_backlight_dev->dev.bus->pm->resume(&bl_backlight_dev->dev);
-	this_disp->platform_enable(this_disp);
+	this_disp->driver->enable(this_disp);
 
 	return 0;
 }
@@ -369,7 +361,7 @@ int bmi_lcd_suspend(struct device *dev)
 
 	printk(KERN_INFO "bmi_lcd: suspend...\n");
 	
-	this_disp->platform_disable(this_disp);
+	this_disp->driver->disable(this_disp);
 	lcd->tsc->dev.bus->suspend(&lcd->tsc->dev, PMSG_SUSPEND);
 	lcd->acc->dev.bus->suspend(&lcd->acc->dev, PMSG_SUSPEND);
 	bl_backlight_dev->dev.bus->pm->suspend(&bl_backlight_dev->dev);
