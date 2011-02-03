@@ -116,8 +116,11 @@ obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
 					   hsmmc.o
 obj-$(CONFIG_MACH_OVERO)		+= board-overo.o \
 					   hsmmc.o
-obj-$(CONFIG_MACH_BUG20)		+= board-omap3bug.o \
-					   hsmmc.o					   
+#obj-$(CONFIG_MACH_BUG20)		+= board-omap3bug.o \
+					   hsmmc.o
+obj-$(CONFIG_MACH_BUG20)		+= board-bugbase.o \
+					   board-bugbase-peripherals.o \
+					   hsmmc.o
 obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o \
 					   hsmmc.o
 obj-$(CONFIG_MACH_OMAP3_PANDORA)	+= board-omap3pandora.o \
