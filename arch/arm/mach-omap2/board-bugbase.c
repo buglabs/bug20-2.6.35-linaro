@@ -47,8 +47,110 @@
 
 extern void __init bugbase_peripherals_init(void);
 
+
+/*
+ * On/Off LEDs available on OMAP.
+ */
+static struct gpio_led gpio_leds[] = {
+		{
+			.name		    = "omap3bug:green:battery",
+			.default_trigger    = "batt-normal",
+			.gpio		    = 53,
+			.active_low         = true,
+			.default_state      = LEDS_GPIO_DEFSTATE_OFF,
+		},
+		{
+			.name		    = "omap3bug:red:battery",
+			.default_trigger    = "batt-low",
+			.gpio		    = 54,
+			.active_low         = true,
+			.default_state      = LEDS_GPIO_DEFSTATE_OFF,
+		},
+};
+
+static struct gpio_led_platform_data gpio_led_info = {
+       .leds           = gpio_leds,
+       .num_leds       = ARRAY_SIZE(gpio_leds),
+};
+
+struct platform_device leds_gpio = {
+       .name   = "leds-gpio",
+       .id     = -1,
+       .dev    = {
+               .platform_data  = &gpio_led_info,
+       },
+};
+
+/*
+ * PWM LEDs available on OMAP.
+ */
+
+static struct omap_pwm_led_platform_data omap_pwm_led_gpt8 = {
+       .name                = "omap3bug:blue:bt",
+       .intensity_timer     = 8,
+       .blink_timer         = 0,
+       .default_trigger     = "hci0",
+       //.set_power           = set_power(&omap_pwm_led_gpt92, 0),
+};
+
+static struct platform_device bugbase_omap_pwm_gpt8 = {
+       .name   = "omap_pwm_led",
+       .id     = 0,
+       .dev    = {
+               .platform_data  = &omap_pwm_led_gpt8,
+       },
+};
+
+static struct omap_pwm_led_platform_data omap_pwm_led_gpt9 = {
+       .name                = "omap3bug:blue:battery",
+       .intensity_timer     = 9,
+       .blink_timer         = 0,
+       .default_trigger     = "none",
+       //.set_power           = set_power(&omap_pwm_led_gpt92, 0),
+};
+
+static struct platform_device bugbase_omap_pwm_gpt9 = {
+       .name   = "omap_pwm_led",
+       .id     = 1,
+       .dev    = {
+               .platform_data  = &omap_pwm_led_gpt9,
+       },
+};
+
+static struct omap_pwm_led_platform_data omap_pwm_led_gpt10 = {
+       .name                = "omap3bug:blue:wifi",
+       .intensity_timer     = 10,
+       .blink_timer         = 0,
+       .default_trigger     = "none",
+       //.set_power           = set_power(&omap_pwm_led_gpt92, 0),
+};
+
+static struct platform_device bugbase_omap_pwm_gpt10 = {
+       .name   = "omap_pwm_led",
+       .id     = 2,
+       .dev    = {
+               .platform_data  = &omap_pwm_led_gpt10,
+       },
+};
+
+static struct omap_pwm_led_platform_data omap_pwm_led_gpt11 = {
+       .name                = "omap3bug:blue:power",
+       .intensity_timer     = 11,
+       .blink_timer         = 0,
+       .default_trigger     = "breathe",
+       //.set_power           = set_power(&omap_pwm_led_gpt92, 0),
+};
+
+static struct platform_device bugbase_omap_pwm_gpt11 = {
+       .name   = "omap_pwm_led",
+       .id     = 3,
+       .dev    = {
+               .platform_data  = &omap_pwm_led_gpt11,
+       },
+};
+
 /* DSS */
-static void __init omap3_bug_display_init(void)
+static void __init bugbase_omap_display_init(void)
 {
 	int r;
 	
@@ -62,7 +164,7 @@ static void __init omap3_bug_display_init(void)
 	return;
 }
 
-static int omap3_bug_panel_enable_lcd(struct omap_dss_device *display)
+static int bugbase_omap_panel_enable_lcd(struct omap_dss_device *display)
 {
 	printk(KERN_INFO "%s\n", __FUNCTION__);
 	omap_mux_init_signal("dss_data18.mcspi3_clk", OMAP_PIN_OUTPUT);
@@ -72,6 +174,7 @@ static int omap3_bug_panel_enable_lcd(struct omap_dss_device *display)
 	omap_mux_init_signal("dss_data22.gpio_92", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("dss_data23.gpio_93", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("etk_d1.gpio_15", OMAP_PIN_INPUT_PULLUP);
+	omap_mux_init_signal("sys_clkout1.gpio_10", OMAP_PIN_INPUT_PULLUP);
 /*
   	omap_cfg_reg (LCD_MCSPI3_CLK);
 	omap_cfg_reg (LCD_MCSPI3_SIMO);
@@ -87,7 +190,7 @@ static int omap3_bug_panel_enable_lcd(struct omap_dss_device *display)
 	return 0;
 }
 
-static void omap3_bug_panel_disable_lcd(struct omap_dss_device *display)
+static void bugbase_omap_panel_disable_lcd(struct omap_dss_device *display)
 {
 	//gpio_direction_output(VIDEO_PIM_SW_ENABLE, 1);
 
@@ -115,17 +218,17 @@ static void omap3_bug_panel_disable_lcd(struct omap_dss_device *display)
 }
 
 
-struct omap_dss_device omap3_bug_lcd_device = {
+struct omap_dss_device bugbase_omap_lcd_device = {
 	.type = OMAP_DISPLAY_TYPE_DPI,
 	.name = "lcd",
 	.driver_name = "sharp_spi_panel",
 	.phy.dpi.data_lines = 18,
 	.reset_gpio = 90,
-	.platform_enable = omap3_bug_panel_enable_lcd,
-	.platform_disable = omap3_bug_panel_disable_lcd,
+	.platform_enable = bugbase_omap_panel_enable_lcd,
+	.platform_disable = bugbase_omap_panel_disable_lcd,
 };
 
-static int omap3_bug_panel_enable_dvi(struct omap_dss_device *display)
+static int bugbase_omap_panel_enable_dvi(struct omap_dss_device *display)
 {
 	omap_mux_init_signal("dss_data18.dss_data18", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("dss_data19.dss_data19", OMAP_PIN_OUTPUT);
@@ -143,7 +246,7 @@ static int omap3_bug_panel_enable_dvi(struct omap_dss_device *display)
 	return 0;
 }
 
-static void omap3_bug_panel_disable_dvi(struct omap_dss_device *display)
+static void bugbase_omap_panel_disable_dvi(struct omap_dss_device *display)
 {
 	//gpio_direction_output(VIDEO_PIM_SW_ENABLE, 1);
 	
@@ -158,45 +261,45 @@ static void omap3_bug_panel_disable_dvi(struct omap_dss_device *display)
 	return;
 }
 
-static struct omap_dss_device omap3_bug_vga_device = {
+static struct omap_dss_device bugbase_omap_vga_device = {
 	.type                = OMAP_DISPLAY_TYPE_DPI,
 	.name                = "vga",
 	.driver_name         = "vga_panel",
 	.phy.dpi.data_lines  = 24,
-	.platform_enable     = omap3_bug_panel_enable_dvi,
-	.platform_disable    = omap3_bug_panel_disable_dvi,
+	.platform_enable     = bugbase_omap_panel_enable_dvi,
+	.platform_disable    = bugbase_omap_panel_disable_dvi,
 };
 
-static struct omap_dss_device omap3_bug_dvi_device = {
+static struct omap_dss_device bugbase_omap_dvi_device = {
 	.type                = OMAP_DISPLAY_TYPE_DPI,
 	.name                = "dvi",
 	.driver_name         = "generic_panel",
 	.phy.dpi.data_lines  = 24,
-	.platform_enable     = omap3_bug_panel_enable_dvi,
-	.platform_disable    = omap3_bug_panel_disable_dvi,
+	.platform_enable     = bugbase_omap_panel_enable_dvi,
+	.platform_disable    = bugbase_omap_panel_disable_dvi,
 };
 
-struct omap_dss_device *omap3_bug_display_devices[] = {
-        &omap3_bug_lcd_device,
-	&omap3_bug_dvi_device,
-	&omap3_bug_vga_device,
+struct omap_dss_device *bugbase_omap_display_devices[] = {
+        &bugbase_omap_lcd_device,
+	&bugbase_omap_dvi_device,
+	&bugbase_omap_vga_device,
 };
 
-static struct omap_dss_board_info omap3_bug_dss_data = {
-	.num_devices	     = ARRAY_SIZE(omap3_bug_display_devices),
-	.devices	     = omap3_bug_display_devices,
-	.default_device	     = &omap3_bug_lcd_device,
+static struct omap_dss_board_info bugbase_omap_dss_data = {
+	.num_devices	     = ARRAY_SIZE(bugbase_omap_display_devices),
+	.devices	     = bugbase_omap_display_devices,
+	.default_device	     = &bugbase_omap_lcd_device,
 };
 
-struct platform_device omap3_bug_dss_device = {
+struct platform_device bugbase_omap_dss_device = {
 	.name	 	     = "omapdss",
 	.id		     = -1,
 	.dev                 = {
-		.platform_data = &omap3_bug_dss_data,
+		.platform_data = &bugbase_omap_dss_data,
 	},
 };
 
-static void __init omap3_bug_init_irq(void)
+static void __init bugbase_omap_init_irq(void)
 {
 	omap2_init_common_hw(mt46h32m32lf6_sdrc_params,
 			     mt46h32m32lf6_sdrc_params);
@@ -250,6 +353,14 @@ void gen_gpio_settings(void)
 
 }
 
+static struct platform_device *bugbase_omap_devices[] __initdata = {
+	&bugbase_omap_pwm_gpt8,
+	&bugbase_omap_pwm_gpt9,
+	&bugbase_omap_pwm_gpt10,
+	&bugbase_omap_pwm_gpt11,
+
+};
+
 static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
 
 	.port_mode[0] = EHCI_HCD_OMAP_MODE_UNKNOWN,
@@ -276,13 +387,14 @@ static struct omap_musb_board_data musb_board_data = {
 	.power			= 100,
 };
 
-static void __init omap3_bug_init(void)
+static void __init bugbase_omap_init(void)
 {
 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-			
+	platform_add_devices(bugbase_omap_devices,
+			ARRAY_SIZE(bugbase_omap_devices));
 	bugbase_peripherals_init();			
 	omap_serial_init();
-	omap3_bug_display_init();
+	bugbase_omap_display_init();
 	usb_musb_init(&musb_board_data);
 	usb_ehci_init(&ehci_pdata);
 
@@ -290,6 +402,7 @@ static void __init omap3_bug_init(void)
 	omap_mux_init_signal("csi2_dy0.gpio_113", OMAP_PIN_INPUT);
 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
+	omap_mux_init_gpio(64, OMAP_PIN_INPUT_PULLUP);
 	gen_gpio_settings();
 }
 
@@ -300,7 +413,7 @@ MACHINE_START(BUG20, "OMAP3 BUGBase")
 	.boot_params	= 0x80000100,
 	.map_io		= omap3_map_io,
 	.reserve	= omap_reserve,
-	.init_irq	= omap3_bug_init_irq,
-	.init_machine	= omap3_bug_init,
+	.init_irq	= bugbase_omap_init_irq,
+	.init_machine	= bugbase_omap_init,
 	.timer		= &omap_timer,
 MACHINE_END

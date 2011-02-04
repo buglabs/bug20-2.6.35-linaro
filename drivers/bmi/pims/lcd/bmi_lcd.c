@@ -51,25 +51,25 @@ static struct omap_dss_device *this_disp;
 
 static int tsc2004_init(void)
 {
-  int res;
+	int res;
 
-  res = gpio_direction_input(10);
-  
-  gpio_set_debounce(10, 7936);
-	
-  return 1;
+	res = gpio_direction_input(10);
+
+	gpio_set_debounce(10, 7900);
+
+	return 1;
 }
 
 static int tsc2004_get_pendown_state(void)
 {
-  return !gpio_get_value(10);
+	return !gpio_get_value(10);
 }
 
 static struct tsc2004_platform_data tsc_platform_data= {
-  .model = 2004,
-  .x_plate_ohms = 180,
-  .get_pendown_state = tsc2004_get_pendown_state,
-  .init_platform_hw = tsc2004_init,
+	.model = 2004,
+	.x_plate_ohms = 180,
+	.get_pendown_state = tsc2004_get_pendown_state,
+	.init_platform_hw = tsc2004_init,
 };
 
 static struct i2c_board_info tsc_info = {
@@ -84,56 +84,18 @@ static struct i2c_board_info acc_info = {
 // private device structure
 struct bmi_lcd
 {
-  struct bmi_device	*bdev;			// BMI device
-  struct cdev		cdev;			// control device
-  struct device  	*class_dev;		// control class device
-  int			open_flag;		// single open flag
-  char			int_name[20];		// interrupt name
-  struct i2c_client     *tsc;
-  struct i2c_client     *acc;
+	struct bmi_device	*bdev;			// BMI device
+	struct cdev		cdev;			// control device
+	struct device  	*class_dev;		// control class device
+	int			open_flag;		// single open flag
+	char			int_name[20];		// interrupt name
+	struct i2c_client     *tsc;
+	struct i2c_client     *acc;
 };
 
 struct bmi_lcd bmi_lcd;
 static int major;	// control device major
 
-/*
- *      sysfs interface
- */
-
-static ssize_t bmi_lcd_suspend_show(struct device *dev, 
-				    struct device_attribute *attr, char *buf)
-{
-    int len = 0;
-    struct bmi_lcd *lcd = dev_get_drvdata(dev);
-
-    int status = lcd->bdev->dev.power.status;
-    
-    if (status == DPM_ON)
-      len += sprintf(buf+len, "0");      
-    else
-      len += sprintf(buf+len, "1");      
-    
-    len += sprintf(len+buf, "\n");
-    return len;
-}
-	
-static ssize_t bmi_lcd_suspend_store(struct device *dev,
-			  struct device_attribute *attr,
-			  const char *buf, size_t len)
-{
-    struct bmi_lcd *lcd = dev_get_drvdata(dev);
-
-    if (strchr(buf, '1') != NULL){
-          lcd->bdev->dev.bus->pm->suspend(&lcd->bdev->dev);
-    }
-    else if (strchr(buf, '0') != NULL){
-          lcd->bdev->dev.bus->pm->resume(&lcd->bdev->dev);
-    }
-
-    return len;
-}
-
-static DEVICE_ATTR(suspend, 0664, bmi_lcd_suspend_show, bmi_lcd_suspend_store);
 
 /*
  * 	BMI set up
@@ -180,11 +142,11 @@ static struct bmi_driver bmi_lcd_driver =
 
 // interrupt handler
 /*
-static irqreturn_t module_irq_handler(int irq, void *dummy)
-{
-	return IRQ_HANDLED;
-}
-*/
+   static irqreturn_t module_irq_handler(int irq, void *dummy)
+   {
+   return IRQ_HANDLED;
+   }
+ */
 
 /*
  * 	BMI functions
@@ -196,8 +158,8 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	int err;
 	int slot;
 	struct bmi_lcd *lcd;
- 	struct class *bmi_class;
-      	struct i2c_adapter *adap;
+	struct class *bmi_class;
+	struct i2c_adapter *adap;
 	struct omap_dss_device *dssdev;
 
 	struct fb_info *info;
@@ -208,7 +170,7 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 
 	err = 0;
 	slot = bdev->slot->slotnum;
-      	adap = bdev->slot->adap;
+	adap = bdev->slot->adap;
 	lcd = &bmi_lcd;
 
 	lcd->bdev = 0;
@@ -217,16 +179,16 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	// Get display info and disable active display
 	dssdev = NULL;
 	this_disp = NULL;
-        for_each_dss_dev(dssdev) {
+	for_each_dss_dev(dssdev) {
 		omap_dss_get_device(dssdev);
 
 		if (dssdev->state)
-		        dssdev->driver->disable(dssdev);
+			dssdev->driver->disable(dssdev);
 
 		if (strnicmp(dssdev->name, "lcd", 3) == 0)
-		        this_disp = dssdev;
+			this_disp = dssdev;
 	}
-       
+
 	// Resize the frame buffer
 	info = registered_fb[0];
 	var = info->var;
@@ -238,9 +200,9 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	var.activate = 128;               // Force update
 
 	err = fb_set_var(info, &var);
-	
+
 	if (err)
-	  printk(KERN_ERR "bmi_lcd.c: probe: error resizing omapfb");
+		printk(KERN_ERR "bmi_lcd.c: probe: error resizing omapfb");
 
 	// Enable this display
 	this_disp->driver->enable(this_disp);
@@ -254,24 +216,24 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	// bind driver and bmi_device 
 	lcd->bdev = bdev;
 
-  	gpio_direction_input(15);		
+	gpio_direction_input(15);		
 
 	tsc_info.irq = gpio_to_irq(10);
 	lcd->tsc = i2c_new_device(bdev->slot->adap, &tsc_info);
 	if (lcd->tsc == NULL)
-	  printk(KERN_ERR "TSC NULL...\n");
-	
+		printk(KERN_ERR "TSC NULL...\n");
+
 	acc_info.irq = gpio_to_irq(15);
 	lcd->acc = i2c_new_device(bdev->slot->adap, &acc_info);
 	if (lcd->acc == NULL)
-	  printk(KERN_ERR "ACC NULL...\n");
+		printk(KERN_ERR "ACC NULL...\n");
 
 	bl_backlight_dev = platform_device_alloc("omap-backlight", -1);
 	err = platform_device_add(bl_backlight_dev);
 
 	if (err) {
-	  platform_device_put(bl_backlight_dev);
-	  printk(KERN_INFO "Backlight driver failed to load...");
+		platform_device_put(bl_backlight_dev);
+		printk(KERN_INFO "Backlight driver failed to load...");
 	}	  
 
 	bmi_device_set_drvdata (bdev, lcd);
@@ -284,7 +246,7 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 
 	return 0;
 
-//err1:	
+	//err1:	
 	//bmi_device_set_drvdata (bdev, 0);
 	//lcd->bdev = 0;
 	//return -ENODEV;
@@ -307,10 +269,10 @@ void bmi_lcd_remove(struct bmi_device *bdev)
 	irq = bdev->slot->status_irq;
 
 	for (i = 0; i < 4; i++)
-	  bmi_slot_gpio_direction_in(slot, i);
+		bmi_slot_gpio_direction_in(slot, i);
 
 	platform_device_unregister(bl_backlight_dev);
-	
+
 	bmi_class = bmi_get_class ();
 	device_destroy (bmi_class, MKDEV(major, slot));
 
@@ -360,7 +322,7 @@ int bmi_lcd_suspend(struct device *dev)
 	lcd = dev_get_drvdata(dev);
 
 	printk(KERN_INFO "bmi_lcd: suspend...\n");
-	
+
 	this_disp->driver->disable(this_disp);
 	lcd->tsc->dev.bus->suspend(&lcd->tsc->dev, PMSG_SUSPEND);
 	lcd->acc->dev.bus->suspend(&lcd->acc->dev, PMSG_SUSPEND);

@@ -31,7 +31,7 @@
 #include <linux/bmi/omap_bmi.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/fixed.h>
-
+#include <linux/leds_pwm.h>
 
 #include <plat/mcspi.h>
 #include <plat/board.h>
@@ -49,8 +49,10 @@
 
 #define NAND_BLOCK_SIZE		SZ_128K
 
-extern struct omap_dss_device omap3_bug_lcd_device;
-extern struct platform_device omap3_bug_dss_device;
+extern struct platform_device leds_gpio;
+extern struct omap_dss_device bugbase_omap_lcd_device;
+extern struct platform_device bugbase_omap_dss_device;
+
 static int bug_twl_gpio_setup(struct device *dev,
                unsigned gpio, unsigned ngpio);
 
@@ -367,7 +369,7 @@ static struct spi_board_info __initdata bug_spi_board_info[] = {
     .chip_select		= 0,
     .max_speed_hz		= 1000000,
     .controller_data		= NULL,
-    .platform_data 		= &omap3_bug_lcd_device, //&lcd_mcspi_config,
+    .platform_data 		= &bugbase_omap_lcd_device, //&lcd_mcspi_config,
     .mode			= SPI_MODE_0,
   },
 };
@@ -380,8 +382,8 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc		= 1,
 		.wires		= 4,
+		.gpio_cd	= 192,
 		.gpio_wp	= -EINVAL,
-		.gpio_cd	= -EINVAL,
 	},
 	{
 	  	.mmc 		= 2,
@@ -392,7 +394,7 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc 		= 3,
 		.wires 		= 1,
-		//.nonremovable	= true,
+		.nonremovable	= true,
 		.gpio_cd	= -EINVAL,
 		.gpio_wp	= -EINVAL,
 	},
@@ -408,7 +410,7 @@ static struct omap2_hsmmc_info mmc[] = {
 static struct regulator_consumer_supply bug_1_8_supplies[] = {
 	{
 		.supply= "vdds_dsi",
-		.dev= &omap3_bug_dss_device.dev,
+		.dev= &bugbase_omap_dss_device.dev,
 	},
 	//REGULATOR_SUPPLY("vmmc", "mmci-omap-hs.2"),
 };
@@ -527,14 +529,51 @@ static struct regulator_init_data bug_vaux2 = {
  *  TPS65930 Setup.
  */
 
+/*
+ * PWM LEDs available on TPS.
+ */
+
+static struct led_pwm pwm_leds[] =
+{
+		{
+			.name               = "omap3bug:red:wifi",
+			.default_trigger    = "phy0radio",
+			.pwm_id             = 0,
+			.active_low         = true,
+			.max_brightness     = LED_FULL,
+			.pwm_period_ns      = 330,
+		},
+		{
+			.name               = "omap3bug:green:wifi",
+			.default_trigger    = "phy0assoc",
+			.pwm_id             = 1,
+			.active_low         = true,
+			.max_brightness     = LED_FULL,
+			.pwm_period_ns      = 330,
+		},
+};
+
+static struct led_pwm_platform_data pwm_led_info =
+{
+		.leds = pwm_leds,
+		.num_leds = ARRAY_SIZE(pwm_leds),
+};
+
+static struct platform_device leds_pwm =
+{
+
+                .name = "leds_pwm",
+		.id = -1,
+		.dev =
+		{
+                                   .platform_data = &pwm_led_info,
+		},
+};
+
+
 static int bug_twl_gpio_setup(struct device *dev,
 		unsigned gpio, unsigned ngpio)
 {
-	/*
-	bug_vmmc1_supply.dev = mmc[0].dev;
-	bug_sd_supplies[0].dev = mmc[1].dev;
-	bug_1_8_supplies[0].dev = mmc[2].dev;
-	*/
 	gpio_request(gpio + 1, "usb_hub");
 	gpio_direction_output(gpio + 1, 1);
 	gpio_free(gpio + 1);
@@ -640,7 +679,7 @@ static struct i2c_board_info __initdata bug_i2c3_boardinfo[] = {
 	},
 };
 
-static int __init omap3_bug_i2c_init(void)
+static int __init bugbase_omap_i2c_init(void)
 {
 	omap_register_i2c_bus(1, 2600, bug_i2c_boardinfo,
 			ARRAY_SIZE(bug_i2c_boardinfo));
@@ -657,10 +696,12 @@ static int __init omap3_bug_i2c_init(void)
  */
 
 
-static struct platform_device *omap3_bug_devices[] __initdata = {
+static struct platform_device *bugbase_peripheral_devices[] __initdata = {
 	&bug_fixed_sd,
 	&bug_fixed_1_8,
-	&omap3_bug_dss_device,
+	&bugbase_omap_dss_device,
+	&leds_pwm,
+	&leds_gpio,
 };
 
 /*
@@ -669,11 +710,11 @@ static struct platform_device *omap3_bug_devices[] __initdata = {
 
 void __init bugbase_peripherals_init(void)
 {
-	omap3_bug_i2c_init();
+	bugbase_omap_i2c_init();
 	spi_register_board_info(bug_spi_board_info,
 				ARRAY_SIZE(bug_spi_board_info));
-	platform_add_devices(omap3_bug_devices,
-			ARRAY_SIZE(omap3_bug_devices));				
+	platform_add_devices(bugbase_peripheral_devices,
+			ARRAY_SIZE(bugbase_peripheral_devices));				
 	bug_flash_init();
 	omap2_hsmmc_init(mmc);
 	omap_init_bmi_slots();
