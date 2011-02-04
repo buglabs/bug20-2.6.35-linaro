@@ -248,6 +248,13 @@ config LEDS_PWM
 	help
 	  This option enables support for pwm driven LEDs
 
+config LEDS_OMAP_PWM
+	tristate "LED Support for OMAP PWM-controlled LEDs"
+	depends on LEDS_CLASS && ARCH_OMAP && OMAP_DM_TIMER
+	help
+	  This options enables support for LEDs connected to GPIO lines
+	  controlled by a PWM timer on OMAP CPUs.
+
 config LEDS_REGULATOR
 	tristate "REGULATOR driven LED support"
 	depends on REGULATOR
@@ -347,6 +354,15 @@ config LEDS_TRIGGER_HEARTBEAT
 	  load average.
 	  If unsure, say Y.
 
+config LEDS_TRIGGER_BREATHE
+	tristate "LED Breathe Trigger"
+	depends on LEDS_TRIGGERS
+	help
+	  This allows LEDs to 'breathe'.  When this trigger is activated,
+	  LED brightness will gradually cycle from min -> max -> min. This
+	  feature requires PWM enabled LEDs.
+	  If unsure, say Y.
+
 config LEDS_TRIGGER_BACKLIGHT
 	tristate "LED backlight Trigger"
 	help
@@ -366,6 +382,14 @@ config LEDS_TRIGGER_GPIO
 	  keypad.
 
 	  If unsure, say N.
+
+config LEDS_TRIGGER_BQSIG
+	tristate "Bug Low Battery Signal Handler"
+	depends on LEDS_TRIGGERS
+	depends on I2C
+	help
+	  Say yes to enable omap3 bug to respond to low battery signals issued
+	  by the bq27500 fuel gauge.
 
 config LEDS_TRIGGER_DEFAULT_ON
 	tristate "LED Default ON Trigger"
