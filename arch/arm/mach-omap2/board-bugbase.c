@@ -327,6 +327,26 @@ void gen_gpio_settings(void)
 	}
 	gpio_direction_output(42, 1);
 
+	r =   gpio_request(41, "spi_cs_1");
+	if (r) {
+		printk(KERN_ERR "gen_gpio: failed to get spi_cs_1...\n");
+		return;
+	}
+	gpio_direction_output(41, 1);
+
+	r =   gpio_request(40, "spi_cs_3");
+	if (r) {
+		printk(KERN_ERR "gen_gpio: failed to get spi_cs_3...\n");
+		return;
+	}
+	gpio_direction_output(40, 1);
+
+	r =   gpio_request(39, "spi_cs_4");
+	if (r) {
+		printk(KERN_ERR "gen_gpio: failed to get spi_cs_4...\n");
+		return;
+	}
+	gpio_direction_output(39, 1);
 
 	r =   gpio_request(109, "twl_msecure");
 	if (r) {
