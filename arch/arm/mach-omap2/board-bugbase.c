@@ -418,10 +418,18 @@ static void __init bugbase_omap_init(void)
 	usb_musb_init(&musb_board_data);
 	usb_ehci_init(&ehci_pdata);
 
-		/* Ensure SDRC pins are mux'd for self-refresh */
+	/* Ensure SDRC pins are mux'd for self-refresh */
 	omap_mux_init_signal("csi2_dy0.gpio_113", OMAP_PIN_INPUT);
 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
+	/* Muxing for base LEDs */
+	omap_mux_init_signal("gpmc_ncs7.gpt8_pwm_evt", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("gpmc_ncs4.gpt9_pwm_evt", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("gpmc_ncs5.gpt10_pwm_evt", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("gpmc_ncs6.gpt11_pwm_evt", OMAP_PIN_OUTPUT);
+	
+	omap_mux_init_gpio(53, OMAP_PIN_OUTPUT);
+	omap_mux_init_gpio(54, OMAP_PIN_OUTPUT);
 	omap_mux_init_gpio(64, OMAP_PIN_INPUT_PULLUP);
 	gen_gpio_settings();
 }
