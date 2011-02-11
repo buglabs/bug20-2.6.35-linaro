@@ -191,6 +191,10 @@ struct lbs_private {
 #define	MAX_REGION_CHANNEL_NUM	2
 	struct region_channel region_channel[MAX_REGION_CHANNEL_NUM];
 
+	struct led_trigger *assoc_led;
+	char assoc_led_name[32];
+	struct led_trigger *radio_led;
+	char radio_led_name[32];
 	/** Requested Signal Strength*/
 	u16 SNR[MAX_TYPE_B][MAX_TYPE_AVG];
 	u16 NF[MAX_TYPE_B][MAX_TYPE_AVG];

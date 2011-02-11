@@ -11,7 +11,7 @@
 
 #include "cfg.h"
 #include "cmd.h"
-
+#include "led.h"
 
 #define CHAN2G(_channel, _freq, _flags) {        \
 	.band             = IEEE80211_BAND_2GHZ, \
@@ -131,7 +131,6 @@ struct wireless_dev *lbs_cfg_alloc(struct device *dev)
 		ret = -ENOMEM;
 		goto err_wiphy_new;
 	}
-
 	lbs_deb_leave(LBS_DEB_CFG80211);
 	return wdev;
 
@@ -180,6 +179,7 @@ int lbs_cfg_register(struct lbs_private *priv)
 	if (ret)
 		lbs_pr_err("cannot register network device\n");
 
+	lbs_led_init(priv);
 	lbs_deb_leave_args(LBS_DEB_CFG80211, "ret %d", ret);
 	return ret;
 }

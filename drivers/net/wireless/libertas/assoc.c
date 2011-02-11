@@ -12,6 +12,7 @@
 #include "host.h"
 #include "scan.h"
 #include "cmd.h"
+#include "led.h"
 
 static const u8 bssid_any[ETH_ALEN]  __attribute__ ((aligned (2))) =
 	{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
@@ -624,7 +625,7 @@ static int lbs_assoc_post(struct lbs_private *priv,
 
 	/* Send a Media Connected event, according to the Spec */
 	priv->connect_status = LBS_CONNECTED;
-
+	lbs_led_assoc(priv, 1);
 	/* Update current SSID and BSSID */
 	memcpy(&priv->curbssparams.ssid, &bss->ssid, IEEE80211_MAX_SSID_LEN);
 	priv->curbssparams.ssid_len = bss->ssid_len;
