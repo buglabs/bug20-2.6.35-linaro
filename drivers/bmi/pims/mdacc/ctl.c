@@ -81,12 +81,12 @@ int ctl_probe (struct ctl *ctl, int slot)
 	//Create class device 
 	bmi_class = bmi_get_class ();                            
 
-	ctl->class_dev = device_create (bmi_class, NULL, MKDEV(ctl_major, slot), ctl, "bmi_mdacc_ctl_m%i", slot+1);  
+	ctl->class_dev = device_create (bmi_class, NULL, MKDEV(ctl_major, slot), ctl, "bmi_mdacc_ctl_m%i", slot);  
 								     
 	if (IS_ERR(ctl->class_dev)) {                                
 		printk(KERN_ERR "Unable to create "                  
 		       "class_device for bmi_mdacc_ctl_m%i; errno = %ld\n",
-		       slot+1, PTR_ERR(ctl->class_dev));             
+		       slot, PTR_ERR(ctl->class_dev));             
 		ctl->class_dev = NULL;                               
 	}
 
@@ -132,7 +132,6 @@ static int ctl_ioctl (struct inode *inode, struct file *file, unsigned int cmd, 
 {
 	struct ctl *ctl;
 	int slot;
-	unsigned char tmp = 0;
 	
 	ctl = container_of(inode->i_cdev, struct ctl, cdev);
 	slot = mdacc_get_slot_ctl (ctl);

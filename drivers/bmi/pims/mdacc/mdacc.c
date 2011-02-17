@@ -204,7 +204,7 @@ int bmi_mdacc_probe(struct bmi_device *bdev)
 
 
 	//Take AVR out of reset
-	bmi_slot_gpio_set_value(slot, GPIO_0, 1);
+	bmi_slot_gpio_set_value(slot, GPIO_1, 1);
 
 	//AVR Reset Recovery time
 

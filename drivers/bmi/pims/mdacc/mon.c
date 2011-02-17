@@ -421,7 +421,7 @@ int mon_probe (struct mon *mon, const char *name, int irq, struct md *md, struct
 		bdev = mdacc_get_bdev_mon (mon);
 		speed = 250000;
 //		speed = 125000;
-		mode = 1;
+		mode = 3;
 		bits_per_word = 8;
 
 		strcpy(mon->mon_spi_info.modalias, "bug_mdacc_spi");
@@ -449,7 +449,7 @@ int mon_probe (struct mon *mon, const char *name, int irq, struct md *md, struct
 		}
 		INIT_WORK(&mon->work_item, mon_work_handler);
 
-		if (request_irq(irq, &mon_irq_handler, 0, name, mon)) { 
+		if (request_irq(irq, &mon_irq_handler, IRQF_TRIGGER_FALLING, name, mon)) { 
 			printk (KERN_ERR "mon_probe() - request_irq (irq = %d) failed.\n", irq);
 			destroy_workqueue( mon->workqueue );
 			goto exit;
