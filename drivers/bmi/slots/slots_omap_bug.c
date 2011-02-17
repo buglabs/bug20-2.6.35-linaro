@@ -20,7 +20,7 @@
 static int bl_present(struct bmi_slot* slot)
 {
   unsigned gpio = irq_to_gpio(slot->present_irq);
-  if (gpio_get_value(gpio))
+  if (gpio_get_value_cansleep(gpio))
     return 0;
   else
     return 1;
@@ -100,7 +100,7 @@ static int bl_gpio_get_value(struct bmi_slot* slot, unsigned gpio)
   unsigned char *gpios = (unsigned char*) slot->slot_data;
   unsigned int ret = 0;
   
-  ret = gpio_get_value(gpios[gpio]);
+  ret = gpio_get_value_cansleep(gpios[gpio]);
   return ret;
 }
 
@@ -108,7 +108,7 @@ static void bl_gpio_set_value(struct bmi_slot* slot, unsigned gpio, int value)
 {
   unsigned char *gpios = (u8*) slot->slot_data;
 
-  gpio_set_value(gpios[gpio], value);
+  gpio_set_value_cansleep(gpios[gpio], value);
   return;
 }
 
