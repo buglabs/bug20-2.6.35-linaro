@@ -146,12 +146,12 @@ int  md_probe (struct md *md, int slot, struct mon *mon)
 	//Create class device 
 	bmi_class = bmi_get_class ();                            
 
-	md->class_dev = device_create (bmi_class, NULL, MKDEV(md_major, slot), md, "bmi_mdacc_mot_m%i", slot+1);  
+	md->class_dev = device_create (bmi_class, NULL, MKDEV(md_major, slot), md, "bmi_mdacc_mot_m%i", slot);  
 								     
 	if (IS_ERR(md->class_dev)) {                                
 		printk(KERN_ERR "Unable to create "                  
 		       "class_device for bmi_mdacc_mot_m%i; errno = %ld\n",
-		       slot+1, PTR_ERR(md->class_dev));             
+		       slot, PTR_ERR(md->class_dev));             
 		md->class_dev = NULL;                               
 	}
 

@@ -85,12 +85,12 @@ int  acc_probe (struct acc *acc, int slot, struct mon *mon)
 
 	bmi_class = bmi_get_class ();                            
 
-	acc->class_dev = device_create (bmi_class, NULL, MKDEV(acc_major, slot), acc, "bmi_mdacc_acc_m%i", slot+1);  
+	acc->class_dev = device_create (bmi_class, NULL, MKDEV(acc_major, slot), acc, "bmi_mdacc_acc_m%i", slot);  
 								     
 	if (IS_ERR(acc->class_dev)) {                                
 		printk(KERN_ERR "Unable to create "                  
 		       "class_device for bmi_mdacc_acc_m%i; errno = %ld\n",
-		       slot+1, PTR_ERR(acc->class_dev));             
+		       slot, PTR_ERR(acc->class_dev));             
 		acc->class_dev = NULL;                               
 	}
 
@@ -257,7 +257,8 @@ static int acc_ioctl (struct inode *inode, struct file *file, unsigned int cmd, 
 		}
 
 		// take the mon semaphore
-		down_interruptible (&acc->mon->sem);
+		if (down_interruptible (&acc->mon->sem))
+			return -ERESTARTSYS;
 
 		memcpy ( &acc->cfg, &new_cfg, sizeof (struct mdacc_accel_config) );
 		cque_destroy (acc->cque);
