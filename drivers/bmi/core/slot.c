@@ -249,6 +249,7 @@ int bmi_slot_module_present (int num)
     printk(KERN_INFO "BMI: Slot Driver incomplete. No presence detection...\n");
   return 0;  
 }
+EXPORT_SYMBOL(bmi_slot_module_present);
 
 int bmi_slot_read_eeprom(struct bmi_slot *slot, u8* data)
 {
