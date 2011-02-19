@@ -62,12 +62,6 @@ static struct i2c_board_info dac_info = {
   I2C_BOARD_INFO("VH_DAC", VH_DAC_I2C_ADDRESS),
 };
 
-
-static ushort factory_test = 0;
-static ushort fcc_test = 0;
-static struct timer_list fcc_timer;
-static int fcc_state = 0x3;
-
 // private device structure
 struct bmi_vh
 {
@@ -574,45 +568,9 @@ struct file_operations cntl_fops = {
  *	PIM functions
  */
 
-// FCC test timer
-void ftimer(unsigned long arg)
-{
-	struct bmi_vh *bmi_vh = (struct bmi_vh *) arg;
-	int slot = bmi_vh->bdev->slot->slotnum;
-
-	/*	bmi_set_module_gpio_data (slot, VH_GPIO_RED_LED, (fcc_state & 0x2) >> 1);
-		bmi_set_module_gpio_data (slot, VH_GPIO_GREEN_LED, fcc_state & 0x1);*/
-	fcc_state = (fcc_state + 1) % 4;
-	del_timer (&fcc_timer);
-	fcc_timer.expires = jiffies + (2 * HZ);
-	add_timer (&fcc_timer);			
-}
-
 // interrupt handler
 static irqreturn_t module_irq_handler(int irq, void *dummy)
 {
-  /*if (!factory_test) {
-		printk (KERN_ERR "Von Hippel USB power error - slot ");
-		switch (irq) {
-			case M1_IRQ:
-				printk (KERN_ERR "1 - powering off\n");
-				bmi_slot_power_off (0);
-				break;
-			case M2_IRQ:
-				printk (KERN_ERR "2 - powering off\n");
-				bmi_slot_power_off (1);
-				break;
-			case M3_IRQ:
-				printk (KERN_ERR "3 - powering off\n");
-				bmi_slot_power_off (2);
-				break;
-			case M4_IRQ:
-				printk (KERN_ERR "3 - powering off\n");
-				bmi_slot_power_off (3);
-				break;
-		}
-	}
-	disable_irq(irq);*/
 	return IRQ_HANDLED;
 }
 
@@ -636,11 +594,6 @@ int bmi_vh_probe(struct bmi_device *bdev)
 	unsigned char dac_data[2];
 	unsigned long speed = 1000000;
 	unsigned char mode = SPI_MODE_2; // von Hippel chip select must be low active
-	unsigned char bits_per_word = 32;
-	unsigned char iox_data;
-	unsigned char buf[4];
-	struct spi_xfer spi_xfer;
-	int gpio_int;
 
 	err = 0;
 	slot = bdev->slot->slotnum;
@@ -662,7 +615,7 @@ int bmi_vh_probe(struct bmi_device *bdev)
 
 	// Create class device 
 	bmi_class = bmi_get_class ();                            
-	vh->class_dev = device_create (bmi_class, NULL, MKDEV (major, slot), NULL, "bmi_vh_control_m%i", slot+1);  
+	vh->class_dev = device_create (bmi_class, NULL, MKDEV (major, slot), NULL, "bmi_vh_control_m%i", slot);  
 								     
 	if (IS_ERR(vh->class_dev)) {                                
 		printk (KERN_ERR "Unable to create "                  
@@ -704,22 +657,12 @@ int bmi_vh_probe(struct bmi_device *bdev)
 
 	bmi_device_set_drvdata (bdev, vh);
 	// configure IOX
-	if (factory_test) {
-		if (WriteByte_IOX(vh->iox, IOX_OUTPUT_REG, 0x55) < 0) {  // all outputs high
-		  goto err1;
-		}
-	
-		if (WriteByte_IOX(vh->iox, IOX_CONTROL, 0xAA) < 0) {     // IOX[7,5,3,1]=IN, IOX[6,4,2,0]=OUT
-		  goto err1;
-		}
-	} else {
-		if (WriteByte_IOX(vh->iox, IOX_OUTPUT_REG, 0x7F) < 0) {  // USB power on, other outputs high
-		  goto err1;
-		}
-	
-		if (WriteByte_IOX(vh->iox, IOX_CONTROL, 0x80) < 0) {     // IOX[7]=IN, IOX[6:0]=OUT
-		  goto err1;
-		}
+	if (WriteByte_IOX(vh->iox, IOX_OUTPUT_REG, 0x7F) < 0) {  // USB power on, other outputs high
+		goto err1;
+	}
+
+	if (WriteByte_IOX(vh->iox, IOX_CONTROL, 0x80) < 0) {     // IOX[7]=IN, IOX[6:0]=OUT
+		goto err1;
 	}
 
 	mdelay(100);
@@ -731,35 +674,7 @@ int bmi_vh_probe(struct bmi_device *bdev)
 
 	printk (KERN_INFO "bmi_vh.c: probe RDAC = 0x%x\n", *rdac_data);
 
-	if (factory_test) {
-
-		mdelay(100);	// RDAC recovery time
-
-		// set LDO voltage to 3.3V
-		*rdac_data = (unsigned char) RDAC_3_3V;
 	
-		if (WriteByte_RDAC (vh->rdac, VH_RD_CMD_RDAC, *rdac_data, 1) < 0) {
-		  goto err1;
-		}
-	
-		mdelay(100);
-	
-		if (WriteByte_RDAC (vh->rdac, VH_RD_CMD_EE, *rdac_data, 1) < 0) {
-		  goto err1;
-		}
-	
-		mdelay(100);
-
-		// read EEPROM
-		if (ReadByte_RDAC(vh->rdac, VH_RD_CMD_EE, rdac_data) < 0) {  // read LDO EEPROM
-		  goto err1;
-		}
-
-		printk (KERN_INFO "bmi_vh.c: probe EEPROM = 0x%x\n", *rdac_data);
-
-		mdelay(100);
-	}
-
 	// read ADC
 	if (ReadByte_ADC(vh->adc, adc_data) < 0) {  // read initial ADC conversion
 	  goto err1;
@@ -767,18 +682,6 @@ int bmi_vh_probe(struct bmi_device *bdev)
 
 	printk (KERN_INFO "bmi_vh.c: probe ADC = 0x%x%x%x\n", adc_data[0], adc_data[1], adc_data[2]);
 
-	if (factory_test) {
-
-		// power up DAC
-		if (WriteByte_DAC(vh->dac, VH_DAC_W1_EC, VH_DAC_BCH | VH_DAC_PU, 1) < 0) { 
-		  goto err1;
-		}
-
-		// Write DAC data
-		if (WriteByte_DAC(vh->dac, VH_DAC_W1_ALL | 0x0, 0xF0, 1) < 0) {  // write A, B, inputs and update
-		  goto err1;
-		}
-	}
 
 	// read DAC
 	if (ReadByte_DAC(vh->dac, VH_DAC_W1_RDA, dac_data) < 0) {  // read initial DAC A value
@@ -809,7 +712,7 @@ int bmi_vh_probe(struct bmi_device *bdev)
 	// request PIM interrupt
 	irq = bdev->slot->status_irq;
 	sprintf (vh->int_name, "bmi_vh%d", slot);
-	if (request_irq(irq, &module_irq_handler, 0, vh->int_name, vh)) {
+	if (request_irq(irq, &module_irq_handler, IRQF_TRIGGER_FALLING, vh->int_name, vh)) {
 		printk (KERN_ERR "bmi_vh.c: Can't allocate irq %d or find von Hippel in slot %d\n", 
 			irq, slot); 
 		//bmi_device_spi_cleanup(bdev);
@@ -820,14 +723,6 @@ int bmi_vh_probe(struct bmi_device *bdev)
 
 	// add usb dependency
 	increment_usb_dep();
-
-	if (fcc_test) {
-		init_timer (&fcc_timer);
-		fcc_timer.data = (unsigned long) &bmi_vh[slot];
-		fcc_timer.expires = jiffies + (2 * HZ);
-		fcc_timer.function = ftimer;
-		add_timer (&fcc_timer);			
-	}
 
 	return 0;
 
@@ -866,14 +761,6 @@ void bmi_vh_remove(struct bmi_device *bdev)
 
 	// remove usb dependency
 	decrement_usb_dep();
-
-	if (factory_test) {
-		// disable uart transceiver
-		bmi_slot_uart_disable (slot);
-	}
-
-	if (fcc_test)
-		del_timer (&fcc_timer);
 
 	irq = bdev->slot->status_irq;
 	free_irq (irq, vh);
@@ -955,12 +842,6 @@ static int __init bmi_vh_init(void)
 		unregister_chrdev_region(dev_id, 4);
 		return -ENODEV;  
 	}
-
-	if(factory_test)
-		printk (KERN_INFO "bmi_vh.c: Factory Test mode enabled\n");
-
-	if(fcc_test)
-		printk (KERN_INFO "bmi_vh.c: FCC Test mode enabled\n");
 
 	printk (KERN_INFO "bmi_vh.c: BMI_VH Driver v%s \n", BMIVH_VERSION);
 
