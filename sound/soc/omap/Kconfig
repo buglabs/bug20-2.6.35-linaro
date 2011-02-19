@@ -82,7 +82,7 @@ config SND_OMAP_SOC_OMAP3EVM
 
 config SND_OMAP_SOC_OMAP3BUG
 	tristate "SoC Audio support for Bug Labs BUGBase board"
-	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP3BUG
+	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_BUG20
 	select SND_OMAP_SOC_MCBSP
 	select SND_SOC_TWL4030
 	help
