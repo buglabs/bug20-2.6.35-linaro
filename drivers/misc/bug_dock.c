@@ -84,7 +84,7 @@ static inline struct dock_device *irq_handler_work_to_dock_device(struct work_st
 
 static void irq_handler_work(struct work_struct *work)
 {
-  bool value = gpio_get_value(DOCK_PRESENCE);
+  bool value = gpio_get_value_cansleep(DOCK_PRESENCE);
   
   if (value) {
     printk(KERN_INFO "bug_dock: Dock Removed\n");
@@ -112,11 +112,11 @@ static irqreturn_t dock_irq_handler(int irq, void *dev_id)
  */
 
 void increment_usb_dep(void) {
-  bool value = gpio_get_value(USB_RESET);
+  bool value = gpio_get_value_cansleep(USB_RESET);
 
   mutex_lock(&count_lock);
   if (!value) {
-    gpio_set_value (USB_RESET, 1);
+    gpio_set_value_cansleep (USB_RESET, 1);
   }
   usb_count ++;
   mutex_unlock(&count_lock);
@@ -127,7 +127,7 @@ void decrement_usb_dep(void){
   mutex_lock(&count_lock);
   usb_count --;
   if (usb_count == 0) {
-    gpio_set_value (USB_RESET, 0);
+    gpio_set_value_cansleep (USB_RESET, 0);
   }
   mutex_unlock(&count_lock);
 }
@@ -176,13 +176,13 @@ static int bug_dock_probe(struct platform_device *pdev)
 
 
   // check for dock
-  value = gpio_get_value(DOCK_PRESENCE);
+  value = gpio_get_value_cansleep(DOCK_PRESENCE);
   if (!value) {
-    gpio_set_value (USB_RESET, 1);
+    gpio_set_value_cansleep (USB_RESET, 1);
     usb_count ++;
   }
   else {
-    gpio_set_value (USB_RESET, 0);
+    gpio_set_value_cansleep (USB_RESET, 0);
   }
 
   if (err < 0) {
