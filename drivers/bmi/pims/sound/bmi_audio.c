@@ -38,8 +38,6 @@
 
 /*
  * TODO:
- *   - sample-rates of 22.05,16,11.025kHz not working right.  Believe this
- *     has to do with cpu/codec clocks.
  *   - I believe I need to hookup some widget/controls to let admp know when
  *     a jack has been inserted/removed
  */
@@ -707,12 +705,6 @@ static int bugaudio_aic3x_init(struct snd_soc_codec *codec)
  *
  * Update the codec data routing and configuration settings
  * from the supplied ata.
- *
- * TODO:
- *  - not able to get the codec to work in master mode, which seems to
- *    be the typical configuration for this codec.  An exmaple that is fairly
- *    close to us is the dm355evm which has an external 27MHz osc to codec
- *    MCLK.  When I use as codec master with 12MHz osc we stall
  */
 static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
@@ -749,8 +741,17 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
+	/* Set the McBSP clock source and freq */
 	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_SYSCLK_CLKS_FCLK,
-				     96000000, SND_SOC_CLOCK_IN);
+				     96000000,
+				     SND_SOC_CLOCK_IN);
+	if (ret < 0) {
+		printk(KERN_ERR "Can't set cpu sysclk\n");
+		return ret;
+	}
+
+	/* Set the McBSP clock divisor */
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, OMAP_MCBSP_CLKGDV, 8);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set cpu sysclk\n");
 		return ret;
