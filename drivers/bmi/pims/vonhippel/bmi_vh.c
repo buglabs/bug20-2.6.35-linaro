@@ -809,7 +809,7 @@ int bmi_vh_probe(struct bmi_device *bdev)
 	// request PIM interrupt
 	irq = bdev->slot->status_irq;
 	sprintf (vh->int_name, "bmi_vh%d", slot);
-	if (request_irq(irq, &module_irq_handler, 0, vh->int_name, vh)) {
+	if (request_irq(irq, &module_irq_handler, IRQF_TRIGGER_FALLING, vh->int_name, vh)) {
 		printk (KERN_ERR "bmi_vh.c: Can't allocate irq %d or find von Hippel in slot %d\n", 
 			irq, slot); 
 		//bmi_device_spi_cleanup(bdev);
