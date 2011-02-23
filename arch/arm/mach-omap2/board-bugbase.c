@@ -427,6 +427,15 @@ static void __init bugbase_omap_init(void)
 	omap_mux_init_signal("gpmc_ncs4.gpt9_pwm_evt", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("gpmc_ncs5.gpt10_pwm_evt", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("gpmc_ncs6.gpt11_pwm_evt", OMAP_PIN_OUTPUT);
+	/* Muxing for BugAUDIO MCBSP */
+	omap_mux_init_signal("mcbsp3_clkx.mcbsp3_clkx", OMAP_PIN_INPUT);
+	omap_mux_init_signal("mcbsp3_fsx.mcbsp3_fsx", OMAP_PIN_INPUT);
+	omap_mux_init_signal("mcbsp3_dr.mcbsp3_dr", OMAP_PIN_INPUT);
+	omap_mux_init_signal("mcbsp3_dx.mcbsp3_dx", OMAP_PIN_OUTPUT);
+	omap_mux_init_signal("mcbsp4_clkx.mcbsp4_clkx", OMAP_PIN_INPUT);
+	omap_mux_init_signal("mcbsp4_fsx.mcbsp4_fsx", OMAP_PIN_INPUT);
+	omap_mux_init_signal("mcbsp4_dr.mcbsp4_dr", OMAP_PIN_INPUT);
+	omap_mux_init_signal("mcbsp4_dx.mcbsp4_dx", OMAP_PIN_OUTPUT);
 	
 	omap_mux_init_gpio(53, OMAP_PIN_OUTPUT);
 	omap_mux_init_gpio(54, OMAP_PIN_OUTPUT);
