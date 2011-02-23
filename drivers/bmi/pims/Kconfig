@@ -48,13 +48,19 @@ config BMI_VIDEO
 	  This is the BMI driver for the Video Plug-In Module (DVI/VGA).
 
 config BMI_AUDIO
-	tristate "BMI Bus Audio Module support"
+	tristate "BMI Audio Module support"
 	depends on BMI_PIMS
 	default n
 	---help---
 	  This is the BMI bus driver for the Audio Plug-In Module.
 
 	  Select M to make a kernel-loadable module.
+
+config BMI_AUDIO_CODECS
+        bool
+        select SND_OMAP_SOC_MCBSP
+        select SND_SOC_TLV320AIC3X
+	default y if BMI_AUDIO
 
 source "drivers/bmi/pims/camera/Kconfig"
 
