@@ -570,7 +570,6 @@ static struct platform_device leds_pwm =
 		},
 };
 
-
 static int bug_twl_gpio_setup(struct device *dev,
 		unsigned gpio, unsigned ngpio)
 {
@@ -596,6 +595,145 @@ static struct twl4030_usb_data bug_usb_data = {
 	.usb_mode	= T2_USB_MODE_ULPI,
 };
 
+static struct twl4030_ins sleep_on_seq[] __initdata = {
+/*
+ * Turn off everything
+ */
+	 {MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_RC, RES_TYPE_ALL, RES_TYPE2_R0,
+			RES_STATE_SLEEP), 4},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R0,
+			RES_STATE_SLEEP), 4},
+};
+
+static struct twl4030_script sleep_on_script __initdata = {
+	.script = sleep_on_seq,
+	.size   = ARRAY_SIZE(sleep_on_seq),
+	.flags  = TWL4030_SLEEP_SCRIPT,
+};
+
+static struct twl4030_ins wakeup_seq[] __initdata = {
+/*
+ * Reenable everything
+ */
+	{MSG_SINGULAR(DEV_GRP_NULL, RES_VUSB_1V5, RES_STATE_ACTIVE), 0x30},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_PP_PR, RES_TYPE_ALL, RES_TYPE2_R0,
+			RES_STATE_ACTIVE), 0x37},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R0,
+			RES_STATE_ACTIVE), 0x2},
+};
+
+static struct twl4030_script wakeup_script __initdata = {
+	.script	= wakeup_seq,
+	.size	= ARRAY_SIZE(wakeup_seq),
+	.flags	= TWL4030_WAKEUP12_SCRIPT | TWL4030_WAKEUP3_SCRIPT,
+};
+
+static struct twl4030_script *twl4030_scripts[] __initdata = {
+	&wakeup_script,
+	&sleep_on_script,
+};
+
+static struct twl4030_resconfig twl4030_rconfig[] __initdata = {
+	{ .resource = RES_VDD1, .devgroup = -1,
+	  .type = 1, .type2 = -1, .remap_off = RES_STATE_OFF,
+	  .remap_sleep = RES_STATE_OFF
+	},
+	{ .resource = RES_VDD2, .devgroup = -1,
+	  .type = 1, .type2 = -1, .remap_off = RES_STATE_OFF,
+	  .remap_sleep = RES_STATE_OFF
+	},
+	{ .resource = RES_VPLL1, .devgroup = -1,
+	  .type = 1, .type2 = -1, .remap_off = RES_STATE_OFF,
+	  .remap_sleep = RES_STATE_OFF
+	},
+	{ .resource = RES_VPLL2, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VAUX1, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VAUX2, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VAUX3, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VAUX4, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VMMC1, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VMMC2, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VDAC, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VSIM, .devgroup = -1,
+	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VINTANA1, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = -1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VINTANA2, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VINTDIG, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = -1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_VIO, .devgroup = DEV_GRP_P3,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_CLKEN, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = 1, .type2 = -1 , .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_REGEN, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_NRES_PWRON, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_SYSEN, .devgroup = DEV_GRP_P1 | DEV_GRP_P3,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_HFCLKOUT, .devgroup = DEV_GRP_P3,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_32KCLKOUT, .devgroup = -1,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_RESET, .devgroup = -1,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ .resource = RES_Main_Ref, .devgroup = -1,
+	  .type = 1, .type2 = -1, .remap_off = -1, .remap_sleep = -1
+	},
+	{ 0, 0},
+};
+
+static struct twl4030_power_data bugbase_scripts_data __initdata = {
+	.scripts        = twl4030_scripts,
+	.num = ARRAY_SIZE(twl4030_scripts),
+	.resource_config = twl4030_rconfig,
+};
+
+static int bugbase_keymap[] = {
+	KEY(0, 0, KEY_ENTER),
+};
+
+static struct matrix_keymap_data bugbase_keymap_data = {
+	.keymap			= bugbase_keymap,
+	.keymap_size		= ARRAY_SIZE(bugbase_keymap),
+};
+
+static struct twl4030_keypad_data bugbase_kp_data = {
+	.keymap_data	= &bugbase_keymap_data,
+	.rows		= 1,
+	.cols		= 1,
+	.rep		= 1,
+};
+
 static struct twl4030_codec_audio_data bug_audio_data = {
 	.audio_mclk = 26000000,
 };
@@ -610,6 +748,8 @@ static struct twl4030_platform_data bug_twldata = {
 	.irq_end	= TWL4030_IRQ_END,
 
 	/* platform_data for children goes here */
+	.power		= &bugbase_scripts_data,
+	.keypad		= &bugbase_kp_data,
 	.usb		= &bug_usb_data,
 	.gpio		= &bug_gpio_data,
 	.codec		= &bug_codec_data,
