@@ -838,7 +838,7 @@ static struct platform_driver bmi_camera_platform_driver = {
 };
 
 static __init int bmi_camera_init(void)
-{	
+{
 	dev_t	dev_id;
 	int ret, i;
 	// initialize slot selection code
@@ -931,9 +931,8 @@ static void __exit bmi_camera_cleanup(void)
 	gpio_free(CAM_LOCKB);
 
 	platform_device_unregister(&omap3isp_device);
+	platform_driver_unregister(&bmi_camera_platform_driver);
 	i2c_del_driver(&bmi_camera_i2c_driver);
-
-
 }
 
 module_init(bmi_camera_init);
