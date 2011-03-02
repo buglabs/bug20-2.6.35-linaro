@@ -8,8 +8,11 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef V4L2_MEDIABUS_H
-#define V4L2_MEDIABUS_H
+#ifndef __LINUX_V4L2_MEDIABUS_H
+#define __LINUX_V4L2_MEDIABUS_H
+
+#include <linux/types.h>
+#include <linux/videodev2.h>
 
 /*
  * These pixel codes uniquely identify data formats on the media bus. Mostly
@@ -41,6 +44,13 @@ enum v4l2_mbus_pixelcode {
 	V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_BE,
 	V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_BE,
 	V4L2_MBUS_FMT_SGRBG8_1X8,
+	V4L2_MBUS_FMT_SGRBG10_1X10,
+	V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8,
+	V4L2_MBUS_FMT_YUYV16_1X16,
+	V4L2_MBUS_FMT_UYVY16_1X16,
+	V4L2_MBUS_FMT_YVYU16_1X16,
+	V4L2_MBUS_FMT_VYUY16_1X16,
+	V4L2_MBUS_FMT_JPEG8,
 };
 
 /**

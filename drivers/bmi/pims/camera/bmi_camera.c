@@ -47,6 +47,7 @@
 #include <linux/i2c.h>
 #include <linux/version.h>
 #include <linux/kernel.h>
+#include <linux/v4l2-subdev.h>
 #include <linux/v4l2-mediabus.h>
 
 #include <media/v4l2-chip-ident.h>
@@ -56,7 +57,8 @@
 #include "bmi_camera.h"
 #include <linux/bmi/bmi_camera.h>
 
-extern struct platform_device omap3isp_device;
+#include "../../../arch/arm/mach-omap2/devices.h"
+//extern struct platform_device omap3isp_device;
 static int major;		// control device major
 
 

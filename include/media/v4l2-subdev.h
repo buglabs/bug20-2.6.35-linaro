@@ -21,8 +21,12 @@
 #ifndef _V4L2_SUBDEV_H
 #define _V4L2_SUBDEV_H
 
+#include <linux/v4l2-mediabus.h>
+#include <linux/v4l2-subdev.h>
+#include <media/media-entity.h>
 #include <media/v4l2-common.h>
-#include <media/v4l2-mediabus.h>
+#include <media/v4l2-dev.h>
+#include <media/v4l2-fh.h>
 
 /* generic v4l2_device notify callback notification values */
 #define V4L2_SUBDEV_IR_RX_NOTIFY		_IOW('v', 0, u32)
@@ -36,7 +40,10 @@
 
 struct v4l2_device;
 struct v4l2_subdev;
+struct v4l2_subdev_fh;
 struct tuner_setup;
+struct v4l2_fh;
+struct v4l2_event_subscription;
 
 /* decode_vbi_line */
 struct v4l2_decode_vbi_line {
@@ -133,6 +140,10 @@ struct v4l2_subdev_core_ops {
 	int (*s_register)(struct v4l2_subdev *sd, struct v4l2_dbg_register *reg);
 #endif
 	int (*s_power)(struct v4l2_subdev *sd, int on);
+	int (*subscribe_event)(struct v4l2_subdev *sd, struct v4l2_fh *fh,
+			       struct v4l2_event_subscription *sub);
+	int (*unsubscribe_event)(struct v4l2_subdev *sd, struct v4l2_fh *fh,
+				 struct v4l2_event_subscription *sub);
 };
 
 /* s_mode: switch the tuner to a specific tuner mode. Replacement of s_radio.
@@ -234,6 +245,10 @@ struct v4l2_subdev_video_ops {
 	int (*s_crop)(struct v4l2_subdev *sd, struct v4l2_crop *crop);
 	int (*g_parm)(struct v4l2_subdev *sd, struct v4l2_streamparm *param);
 	int (*s_parm)(struct v4l2_subdev *sd, struct v4l2_streamparm *param);
+	int (*g_frame_interval)(struct v4l2_subdev *sd,
+				struct v4l2_subdev_frame_interval *interval);
+	int (*s_frame_interval)(struct v4l2_subdev *sd,
+				struct v4l2_subdev_frame_interval *interval);
 	int (*enum_framesizes)(struct v4l2_subdev *sd, struct v4l2_frmsizeenum *fsize);
 	int (*enum_frameintervals)(struct v4l2_subdev *sd, struct v4l2_frmivalenum *fival);
 	int (*enum_dv_presets) (struct v4l2_subdev *sd,
@@ -389,6 +404,27 @@ struct v4l2_subdev_ir_ops {
 				struct v4l2_subdev_ir_parameters *params);
 };
 
+struct v4l2_subdev_pad_ops {
+	int (*enum_mbus_code)(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+			      struct v4l2_subdev_pad_mbus_code_enum *code);
+	int (*enum_frame_size)(struct v4l2_subdev *sd,
+			       struct v4l2_subdev_fh *fh,
+			       struct v4l2_subdev_frame_size_enum *fse);
+	int (*enum_frame_interval)(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_fh *fh,
+				   struct v4l2_subdev_frame_interval_enum *fie);
+	int (*get_fmt)(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+		       unsigned int pad, struct v4l2_mbus_framefmt *fmt,
+		       enum v4l2_subdev_format which);
+	int (*set_fmt)(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+		       unsigned int pad, struct v4l2_mbus_framefmt *fmt,
+		       enum v4l2_subdev_format which);
+	int (*set_crop)(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+		       struct v4l2_subdev_pad_crop *crop);
+	int (*get_crop)(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+		       struct v4l2_subdev_pad_crop *crop);
+};
+
 struct v4l2_subdev_ops {
 	const struct v4l2_subdev_core_ops	*core;
 	const struct v4l2_subdev_tuner_ops	*tuner;
@@ -397,6 +433,7 @@ struct v4l2_subdev_ops {
 	const struct v4l2_subdev_vbi_ops	*vbi;
 	const struct v4l2_subdev_ir_ops		*ir;
 	const struct v4l2_subdev_sensor_ops	*sensor;
+	const struct v4l2_subdev_pad_ops	*pad;
 };
 
 #define V4L2_SUBDEV_NAME_SIZE 32
@@ -405,11 +442,14 @@ struct v4l2_subdev_ops {
 #define V4L2_SUBDEV_FL_IS_I2C (1U << 0)
 /* Set this flag if this subdev is a spi device. */
 #define V4L2_SUBDEV_FL_IS_SPI (1U << 1)
+#define V4L2_SUBDEV_USES_EVENTS	(1U << 2)
 
 /* Each instance of a subdev driver should create this struct, either
    stand-alone or embedded in a larger struct.
  */
 struct v4l2_subdev {
+	struct media_entity entity;
+
 	struct list_head list;
 	struct module *owner;
 	u32 flags;
@@ -421,7 +461,42 @@ struct v4l2_subdev {
 	u32 grp_id;
 	/* pointer to private data */
 	void *priv;
+	/* subdev device node */
+	struct video_device devnode;
+	unsigned int initialized;
+	/* number of events to be allocated on open */
+	unsigned int nevents;
 };
+
+#define media_entity_to_v4l2_subdev(ent) \
+	container_of(ent, struct v4l2_subdev, entity)
+#define vdev_to_v4l2_subdev(vdev) \
+	container_of(vdev, struct v4l2_subdev, devnode)
+
+/*
+ * Used for storing subdev information per file handle
+ */
+struct v4l2_subdev_fh {
+	struct v4l2_fh vfh;
+	struct v4l2_mbus_framefmt *probe_fmt;
+	struct v4l2_rect *probe_crop;
+};
+
+#define to_v4l2_subdev_fh(fh)	\
+	container_of(fh, struct v4l2_subdev_fh, vfh)
+
+static inline struct v4l2_mbus_framefmt *
+v4l2_subdev_get_probe_format(struct v4l2_subdev_fh *fh, unsigned int pad)
+{
+	return &fh->probe_fmt[pad];
+}
+
+static inline struct v4l2_rect *
+v4l2_subdev_get_probe_crop(struct v4l2_subdev_fh *fh, unsigned int pad)
+{
+	return &fh->probe_crop[pad];
+}
+
 
 static inline void v4l2_set_subdevdata(struct v4l2_subdev *sd, void *p)
 {
@@ -433,19 +508,10 @@ static inline void *v4l2_get_subdevdata(const struct v4l2_subdev *sd)
 	return sd->priv;
 }
 
-static inline void v4l2_subdev_init(struct v4l2_subdev *sd,
-					const struct v4l2_subdev_ops *ops)
-{
-	INIT_LIST_HEAD(&sd->list);
-	/* ops->core MUST be set */
-	BUG_ON(!ops || !ops->core);
-	sd->ops = ops;
-	sd->v4l2_dev = NULL;
-	sd->flags = 0;
-	sd->name[0] = '\0';
-	sd->grp_id = 0;
-	sd->priv = NULL;
-}
+void v4l2_subdev_init(struct v4l2_subdev *sd,
+		      const struct v4l2_subdev_ops *ops);
+
+int v4l2_subdev_set_power(struct media_entity *entity, int power);
 
 /* Call an ops of a v4l2_subdev, doing the right checks against
    NULL pointers.

@@ -1,6 +1,8 @@
 config BMI_CAMERA
 	tristate "BMI Camera"
 	depends on BMI_PIMS
+	select VIDEO_OMAP3
+	select OMAP_IOMMU
 	default n
 	---help---
 	  This is the BMI Camera driver.
