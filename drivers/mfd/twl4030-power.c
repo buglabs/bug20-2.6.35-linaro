@@ -33,6 +33,13 @@
 
 static u8 twl4030_start_script_address = 0x2b;
 
+#if defined(CONFIG_TWL4030_STARTON_DISABLE) || \
+	defined(CONFIG_TWL4030_STARTON_DISABLE_MODULE)
+#define twl_has_starton_disable()        true
+#else
+#define twl_has_starton_disable()        false
+#endif
+
 #define PWR_P1_SW_EVENTS	0x10
 #define PWR_DEVOFF	(1<<0)
 
@@ -511,6 +518,31 @@ int twl4030_remove_script(u8 flags)
 	return err;
 }
 
+static void twl4030_power_off(void)
+{
+	int err;
+	u8 val;
+
+	printk(KERN_INFO "%s\n", __FUNCTION__);
+	err = twl_i2c_read_u8(TWL4030_MODULE_PM_MASTER, &val,
+				  PWR_P1_SW_EVENTS);
+	if (err) {
+		pr_err("TWL4030 i2c error %d while reading TWL4030"
+			"PM_MASTER P1_SW_EVENTS\n",
+			err);
+		return;
+	}
+
+	val |= PWR_DEVOFF;
+	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, val,
+				   PWR_P1_SW_EVENTS);
+
+	if (err)
+		pr_err("TWL4030 i2c error %d while writing TWL4030"
+			"PM_MASTER P1_SW_EVENTS\n",
+			err);
+}
+
 void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
 {
 	int err = 0;
@@ -545,7 +577,8 @@ void __init twl4030_power_init(struct twl4030_power_data *twl4030_scripts)
 
 		}
 	}
-
+	
+	pm_power_off = twl4030_power_off;
 	err = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0, R_PROTECT_KEY);
 	if (err)
 		pr_err("TWL4030 Unable to relock registers\n");
