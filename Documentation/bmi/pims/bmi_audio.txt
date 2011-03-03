@@ -1,0 +1,174 @@
+Module Activation
+==================
+
+On the BugBase Slot0 and Slot2 share I2S resources thus only 1 of those slots
+can be 'active' at a time.  Slot3 has exclusive access to its resources and
+slot2 is dedicated for video only modules thus cannot be used for BUGAudio.
+
+When a BUGAudio module is detected it will immediately present its input
+device (see below) and its character device (see below) but will not present
+its audio device until it is in the 'actived' state.  If upon detection there
+is no resource conflict, it will automatically move to the active state,
+otherwise it will go to the 'deactivated' state.  When a module is moved to
+the 'deactivated' state it will remove its ALSA device which allows the
+shared resources to be used to move another module into the active state.
+The only difference between activated and deactivated is the presence of the
+ALSA audio device.
+
+To manually move a module to the 'deactivated' state or 'activated' state
+you can use the ioctl API (below).
+
+
+Input API
+=========
+
+A Linux input device is registered for each slot with a BUGAudio PIM present:
+bmi_audio_status_m<slot>
+
+When the up/down buttons change state, or a input/output jack is
+inserted/removed an event is generated on this device reported as ABS_MISC
+with a value corresponding to the bit(s) changed as defined in the
+BMI_AUDIO_EVENT enumeration in include/bmi/bmi_audio.h
+
+Note that the up/down buttons are not inherently linked to any controls and
+it would be userspace responsibility to monitor the input device and use
+the buttons as desired
+
+In order to create handy symlinks in /dev/input/ it may be useful to add the
+following rules to /etc/udev/rules.d/00-bug20.rules:
+# BugAudio input devices
+KERNEL=="event*",ATTRS{name}=="bmi_audio_status_m0",SYMLINK+="input/bmi_audio_status_m0"
+KERNEL=="event*",ATTRS{name}=="bmi_audio_status_m1",SYMLINK+="input/bmi_audio_status_m1"
+KERNEL=="event*",ATTRS{name}=="bmi_audio_status_m2",SYMLINK+="input/bmi_audio_status_m2"
+KERNEL=="event*",ATTRS{name}=="bmi_audio_status_m3",SYMLINK+="input/bmi_audio_status_m3"
+
+
+Character Device ioctl API
+==========================
+
+A Linux character device is registered for each slot with a BUGAudio PIM
+present:
+bmi_audio_cntl_m<slot>
+
+The ioctl operations are defined in include/linux/bmi/bmi_audio.h and allow:
+ - setting the green/red LEDs
+ - activating/deactivating the module
+ - getting the status of the gpios/jack presence states
+ - resetting the audio codec
+
+
+ALSA Device
+===========
+
+The BUGAudio PIM uses a TI TLV320AIC3105 Audio codec integrated circuit.
+It is important to understand how the codec is physically connected to the
+input/output devices in order to understand how to use the ALSA mixer controls.
+
+Each BUGAudio PIM will create a device in /proc/asound named 'card<n>' where
+n is incremented for each ALSA device in the system.  The TWL4030 audio
+codec in the BugBase will be card0, and the first BUGAudio PIM activated
+will be card1, and the 2nd BUGAudio PIM activated will be card2.  To determine
+which slot a specific card is you can look at the contents of the 'id' file,
+for example:
+
+root@bug20:~# cat /proc/asound/card1/id 
+bmiaudiodevm0
+
+This indicates that card1 is the BUGAudio PIM in slot0.  Most ALSA applications
+allow you to indicate the ALSA device with a command line argument to specify
+the card number.  Some applications allow you to specify the 'device' as an
+ALSA 'interface'.  Some examples that specify card1 (BUGAudio in slot0 in
+the above case):
+
+# play via card1, device 0
+aplay -D plughw:1 /usr/share/sounds/alsa/Front_Center.wav
+# view/change mixer controls for card1
+alsamixer -c 1
+# store mixer settings for card1
+alsactl store 1
+
+A Simplified Block Diagram on page 3 of the TLV320AIC3105 Codec
+(http://focus.ti.com/lit/ds/symlink/tlv320aic3105.pdfpg 3) shows all the
+internal mixers/switches/amps.  Some general notes: 
+ - 'DAC Mux' (Left/Right) allow sending the DAC direct to an output or to
+    mixer where mixer gives maximum flexibility as all outputs can mix in
+    all input sources.  Note there is no direct path to speaker (HPCOM) - for
+    output to speaker you must set DAC Mux to DAC_L1/DAC_R1
+    DAC_L1/R1 - mixer
+    DAC_L2/R1 - direct to Headphone (HPOUT)
+    DAC_L3/R1 - direct to Lineout (LOPM)
+ - each input (6x) has a Programable Gain Amplifer (PGA) and
+   Automatic Gain Control (AGC)
+ - every output (5 of them in our case: R/L Headphone, Mono Spk, R/L Lineout)
+   has its own mixing stage with analog volume control/mute of each of
+   6 possible inputs:
+    DAC_L - output of the left DAC
+    DAC_R - output of the right DAC
+    LINE2L - line2 input prior to PGA/AGC
+    LINE2R - line2 input prior to PGA/AGC
+    PGAL - line2 input after PGA/AGC
+    PGAR - line2 input after PGA/AGC
+  - BUGAudio PIM connections (codec register to function):
+    - Input:
+        - LINE1L/LINE1R - Stereo Line Input
+        - LINE2L/LINE2R - Stereo Mice Input
+        - LINE3L/LINE3R - Mono Mic
+    - Output:
+        - HPLOUT/HPROUT - Stereo Headphone
+        - HPLCOM/HPRCOM - Mono Speaker (L)
+          - 'Left HPCOM Mux' should be set to 'single-ended'
+          - 'Right HPCOM Mux' - should be set to 'differential of HPLCOM'
+        - LOP/LOM - Stereo Line Out
+
+Output Volume Controls:
+  - each of the volume controls have a value of 0-127 in steps of 1
+    cooresponding to 0 to -78dB analog volume control (118-127 is mute)
+
+ PCM (pvolume) - LDAC_VOL(43)/RDAC_VOL(44) - master volume control
+
+ Headphone Mixers: HPOUT
+  - 'HP DAC' (pvolume) - linked DAC output to headphone
+  - 'HP DAC' (pswitch) - headphone mute
+  - 'Right HP Mixer DACL1 (pvolume) - DAC Left output mixed to HP right
+  - 'Left HP Mixer DACR1 (pvolume) - DAC Right output mixed to HP left
+  - 'HP Right PGA Bypass' (pvolume) - PGA_R input to headphone
+  - 'HPL PGA Bypass' (pvolume) - PGA_L input to headphoneL
+  - 'HPR PGA Bypass' (pvolume) - PGA_R input to headphoneR
+  - 'HP Line2 Bypass' (pvolume) - linked MIC input (prior to input mix/PGA/AGC)
+    to headphone
+ 
+ Speaker Mixers: HPCOM
+  - 'HPCOM DAC' (pvolume) - linked DAC output to speaker
+  - 'HPCOM DAC' (pswitch) - speaker mute
+  - 'HPLCOM PGA Bypass' (pvolume) - PGA_L input to speakerL
+  - 'HPRCOM PGA Bypass' (pvolume) - PGA_L input to speakerR
+  - 'HPCOM Line2 Bypass' (pvolume) - linked MIC input (prior to input
+    mix/PGA/AGC) to speaker
+  - 'Left HPCOM Mux' - connection type of HPCOM_L (Speaker)
+    -  differential of HPLOUT
+    -  constant VCM
+    - *single-ended - this should be set for BUGAudio
+  - 'Right HPCOM Mux' - connection type of HPCOM_R (Speaker)
+    -  differential of HPROUT
+    -  constant VCM
+    -  single-ended - this should be set for BUGAudio
+    - *differential of HPLCOM
+    -  external feedback
+ 
+ Lineout Mixers: LOPM
+  - 'Line DAC' (pvolume) - linked DAC output to lineout
+  - 'LineL' (pswitch) - lineoutL mute
+  - 'LineR' (pswitch) - lineoutR mute
+  - 'LineL DAC' (pvolume) - DAC output to lineoutL
+  - 'LineR Left PGA Bypass' (pvolume) - PGA_L input to lineoutR
+  - 'LineR Right PGA Bypass' (pvolume) - PGA_R input to lineoutL
+  - 'LineL Line2 Bypass' (pvolume) - linked MIC input (prior to input
+    mix/PGA/AGC) to to lineoutL
+  - 'LineR Line2 Bypass' (pvolume) - linked MIC input (prior to input
+    mix/PGA/AGC) to to lineoutR
+
+Input Controls:
+  - 'PGA Capture' (pvolume) - PGA gain
+  - 'PGA Capture' (pswitch) - PGA mute
+  - 'AGC' (pswitch) - Automatic Gain enable/disable
+  - 'ADC HPF Cut-off' (enum) - ADC high pass filter cutoff
