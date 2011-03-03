@@ -13,6 +13,7 @@
 #include <linux/kdev_t.h>
 #include <linux/major.h>
 #include <sound/core.h>
+#include <linux/smp_lock.h>
 
 #ifdef CONFIG_SOUND_OSS_CORE
 static int __init init_oss_soundcore(void);
@@ -104,7 +105,6 @@ module_exit(cleanup_soundcore);
 
 #include <linux/init.h>
 #include <linux/slab.h>
-#include <linux/smp_lock.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/sound.h>
@@ -165,6 +165,7 @@ static const struct file_operations soundcore_fops =
 	/* We must have an owner or the module locking fails */
 	.owner	= THIS_MODULE,
 	.open	= soundcore_open,
+	.llseek = noop_llseek,
 };
 
 /*

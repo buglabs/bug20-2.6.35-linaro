@@ -65,8 +65,6 @@
 
 // the paths here are a bit odd as typ omap soc drivers are in sound/soc/omap
 #include "../../../../sound/soc/omap/omap-mcbsp.h"
-#include "../../../../sound/soc/omap/omap-pcm.h"
-#include "../../../../sound/soc/codecs/tlv320aic3x.h"
 
 // BMI/BUG interfaces
 #include <linux/bmi.h>
@@ -133,7 +131,7 @@ static int major;					// control device major
 static int activate_slot(struct bmi_device *bdev);
 static void deactivate_slot(struct bmi_device *bdev);
 static int set_speaker_amp(struct bmi_device *bdev, bool enable);
-static struct snd_soc_device bugaudio_snd_devdata[BMI_NUM_SLOTS];
+static struct snd_soc_card snd_soc_bugaudio[BMI_NUM_SLOTS];
 
 //
 // I2C devices
@@ -563,7 +561,7 @@ static int bugaudio_startup(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec *codec = rtd->socdev->card->codec;
+	struct snd_soc_codec *codec = rtd->codec;
 
 	snd_pcm_hw_constraint_minmax(runtime,
 				     SNDRV_PCM_HW_PARAM_CHANNELS, 2, 2);
@@ -600,8 +598,6 @@ static int bugaudio_set_spk(struct snd_kcontrol *kcontrol,
  * this is part of the pop/click reduction stuff
  * if spk is on, after audio playback has stopped for a sec or so
  * this will get called with an event to turn off the speaker amp
- * - the widget pointer is not the widget I recated and k=null
-
  */
 static int bugaudio_spk_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *k, int event)
@@ -609,10 +605,10 @@ static int bugaudio_spk_event(struct snd_soc_dapm_widget *w,
 	int slot;
 
 	for (slot = 0; slot < BMI_NUM_SLOTS; slot++) {
-		if (&bugaudio_snd_devdata[slot] == w->codec->socdev)
+		if (&snd_soc_bugaudio[slot] == w->codec->card)
 			break;
 	}
-	if (&bugaudio_snd_devdata[slot] != w->codec->socdev) {
+	if (&snd_soc_bugaudio[slot] != w->codec->card) {
 		printk(KERN_ERR "bmi_audio: unknown slot for widget %s\n",
 		       w->name);
 		return -ENODEV;
@@ -650,7 +646,7 @@ static const struct snd_kcontrol_new aic3x_bugaudio_controls[] = {
 };
 
 /** Dynamic Audio Power Management (DAPM)
- * bugaudio_init - init machine specific features and controls
+ * bugaudio_aic3x_init - init machine specific features and controls
  * @codec - the codec instance to attach to.
  *
  * Attach our controls and configure the necessary codec
@@ -660,8 +656,9 @@ static const struct snd_kcontrol_new aic3x_bugaudio_controls[] = {
  * @see soc-dapm.h for convenience macros
  * @see sound/soc/omap/rx51.c for good exmaples
  */
-static int bugaudio_aic3x_init(struct snd_soc_codec *codec)
+static int bugaudio_aic3x_init(struct snd_soc_pcm_runtime *rtd)
 {
+	struct snd_soc_codec *codec = rtd->codec;
 	int err;
 
 	/* Set up NC codec pins */
@@ -705,13 +702,15 @@ static int bugaudio_aic3x_init(struct snd_soc_codec *codec)
  *
  * Update the codec data routing and configuration settings
  * from the supplied ata.
+ * TODO FIXME: look at Documentation/sound/alsa/soc/clocking.txt to see
+ *  if I'm doing clocks correctly
  */
 static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
-	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	int ret;
 
 	/* Set codec DAI configuration - bus clock slave */
@@ -781,45 +780,53 @@ static struct snd_soc_ops bugaudio_ops = {
  * shared slot1/3
  */
 static struct snd_soc_dai_link bugaudio_dai[] = {
-	// slot0
+	// slot0 - McBSP3
 	{
 		.name		= "TLV320AIC31",
 		.stream_name	= "AIC31",
-		.cpu_dai	= &omap_mcbsp_dai[1],
-		.codec_dai	= &aic3x_dai,
+		.cpu_dai_name	= "omap-mcbsp-dai.2",
+		.platform_name	= "omap-pcm-audio",
+		.codec_dai_name	= "tlv320aic3x-hifi",
+		.codec_name	= "tlv320aic3x-codec.4-0018",
 #ifdef AIC3X_CONTROLS
 		.init		= &bugaudio_aic3x_init,
 #endif
 		.ops		= &bugaudio_ops,
 	},
-	// slot1
+	// slot1 - McBSP4 (NB: this is a dummy, it cant exist)
 	{
 		.name		= "TLV320AIC31",
 		.stream_name	= "AIC31",
-		.cpu_dai	= &omap_mcbsp_dai[2],
-		.codec_dai	= &aic3x_dai,
+		.cpu_dai_name	= "omap-mcbsp-dai.3",
+		.platform_name	= "omap-pcm-audio",
+		.codec_dai_name	= "tlv320aic3x-hifi",
+		.codec_name	= "tlv320aic3x-codec.5-0018",
 #ifdef AIC3X_CONTROLS
 		.init		= &bugaudio_aic3x_init,
 #endif
 		.ops		= &bugaudio_ops,
 	},
-	// slot2
+	// slot2 - McBSP3
 	{
 		.name		= "TLV320AIC31",
 		.stream_name	= "AIC31",
-		.cpu_dai	= &omap_mcbsp_dai[1],
-		.codec_dai	= &aic3x_dai,
+		.cpu_dai_name	= "omap-mcbsp-dai.2",
+		.platform_name	= "omap-pcm-audio",
+		.codec_dai_name	= "tlv320aic3x-hifi",
+		.codec_name	= "tlv320aic3x-codec.6-0018",
 #ifdef AIC3X_CONTROLS
 		.init		= &bugaudio_aic3x_init,
 #endif
 		.ops		= &bugaudio_ops,
 	},
-	// slot3
+	// slot3 - McBSP4
 	{
 		.name		= "TLV320AIC31",
 		.stream_name	= "AIC31",
-		.cpu_dai	= &omap_mcbsp_dai[2],
-		.codec_dai	= &aic3x_dai,
+		.cpu_dai_name	= "omap-mcbsp-dai.3",
+		.platform_name	= "omap-pcm-audio",
+		.codec_dai_name	= "tlv320aic3x-hifi",
+		.codec_name	= "tlv320aic3x-codec.7-0018",
 #ifdef AIC3X_CONTROLS
 		.init		= &bugaudio_aic3x_init,
 #endif
@@ -837,67 +844,30 @@ static struct snd_soc_card snd_soc_bugaudio[] = {
 	// slot0
 	{
 		.name = "bmi_audio_dev_m0",
-		.platform = &omap_soc_platform,
+		.owner = THIS_MODULE,
 		.dai_link = &bugaudio_dai[0],
 		.num_links = 1,
 	},
 	// slot1
 	{
 		.name = "bmi_audio_dev_m1",
-		.platform = &omap_soc_platform,
+		.owner = THIS_MODULE,
 		.dai_link = &bugaudio_dai[1],
 		.num_links = 1,
 	},
 	// slot2
 	{
 		.name = "bmi_audio_dev_m2",
-		.platform = &omap_soc_platform,
+		.owner = THIS_MODULE,
 		.dai_link = &bugaudio_dai[2],
 		.num_links = 1,
 	},
 	// slot3
 	{
 		.name = "bmi_audio_dev_m3",
-		.platform = &omap_soc_platform,
+		.owner = THIS_MODULE,
 		.dai_link = &bugaudio_dai[3],
 		.num_links = 1,
-	},
-};
-
-/* Audio private data */
-// TODO: ok to share this among 4 snd_soc_device structs?
-static struct aic3x_setup_data bugaudio_aic3x_setup = {
-/* aic3x gpios not used on bugaudio 
-	.gpio_func[0] = AIC3X_GPIO1_FUNC_DISABLED,
-	.gpio_func[1] = AIC3X_GPIO2_FUNC_DIGITAL_MIC_INPUT,
-*/
-};
-
-/* Audio subsystem */
-static struct snd_soc_device bugaudio_snd_devdata[] = {
-	// slot0
-	{
-		.card = &snd_soc_bugaudio[0],
-		.codec_dev = &soc_codec_dev_aic3x,
-		.codec_data = &bugaudio_aic3x_setup,
-	},
-	// slot1
-	{
-		.card = &snd_soc_bugaudio[1],
-		.codec_dev = &soc_codec_dev_aic3x,
-		.codec_data = &bugaudio_aic3x_setup,
-	},
-	// slot2
-	{
-		.card = &snd_soc_bugaudio[2],
-		.codec_dev = &soc_codec_dev_aic3x,
-		.codec_data = &bugaudio_aic3x_setup,
-	},
-	// slot3
-	{
-		.card = &snd_soc_bugaudio[3],
-		.codec_dev = &soc_codec_dev_aic3x,
-		.codec_data = &bugaudio_aic3x_setup,
 	},
 };
 
@@ -912,7 +882,6 @@ static struct snd_soc_device bugaudio_snd_devdata[] = {
 static int activate_slot(struct bmi_device *bdev) {
 	int slot = bdev->slot->slotnum;
 	struct bmi_audio *audio = &bmi_audio[slot];
-	int mcbsp = 0;
 	int rc = 0;
 
 	printk(KERN_INFO "bmi_audio: activate slot%d\n", slot);
@@ -925,7 +894,6 @@ static int activate_slot(struct bmi_device *bdev) {
 				printk(KERN_INFO "bmi_audio: slot%d activation failed, slot2 is active\n", slot);
 				return -EBUSY;
 			}
-			mcbsp = 3;
 			break;
 		case 1: // this should never happen - slot1 is dedicated for
 			// video and is physically keyed differently than PIM
@@ -936,10 +904,8 @@ static int activate_slot(struct bmi_device *bdev) {
 				printk(KERN_INFO "bmi_audio: slot%d activation failed, slot0 is active\n", slot);
 				return -EBUSY;
 			}
-			mcbsp = 3;
 			break;
 		case 3:
-			mcbsp = 4;
 			break;
 	}
 
@@ -958,13 +924,8 @@ static int activate_slot(struct bmi_device *bdev) {
 		goto err1;
 	}
 
-	// bind the device data to the platform device and visa versa
-	platform_set_drvdata(audio->snd_device, &bugaudio_snd_devdata[slot]);
-	bugaudio_snd_devdata[slot].dev = &audio->snd_device->dev;
-	// set the McBSP
-	*(unsigned int *)bugaudio_dai[slot].cpu_dai->private_data = mcbsp-1;
+	platform_set_drvdata(audio->snd_device, &snd_soc_bugaudio[slot]);
 
-	//platform_device_add_data(audio->snd_device, &bugaudio_snd_data, sizeof(bugaudio_snd_data));
 	rc = platform_device_add(audio->snd_device);
 	if (rc)
 		goto err2;

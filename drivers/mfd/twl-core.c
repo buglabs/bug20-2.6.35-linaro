@@ -698,7 +698,7 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
 
 	if (twl_has_codec() && pdata->codec && twl_class_is_4030()) {
 		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
-		child = add_child(sub_chip_id, "twl4030_codec",
+		child = add_child(sub_chip_id, "twl4030-audio",
 				pdata->codec, sizeof(*pdata->codec),
 				false, 0, 0);
 		if (IS_ERR(child))
@@ -708,7 +708,7 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
 	/* Phoenix*/
 	if (twl_has_codec() && pdata->codec && twl_class_is_6030()) {
 		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
-		child = add_child(sub_chip_id, "twl6040_codec",
+		child = add_child(sub_chip_id, "twl6040-audio",
 				pdata->codec, sizeof(*pdata->codec),
 				false, 0, 0);
 		if (IS_ERR(child))
