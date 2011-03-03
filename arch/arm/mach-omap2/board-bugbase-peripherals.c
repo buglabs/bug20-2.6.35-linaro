@@ -736,6 +736,7 @@ static struct twl4030_keypad_data bugbase_kp_data = {
 
 static struct twl4030_codec_audio_data bug_audio_data = {
 	.audio_mclk = 26000000,
+	.ramp_delay_value = 4,
 };
 
 static struct twl4030_codec_data bug_codec_data = {
