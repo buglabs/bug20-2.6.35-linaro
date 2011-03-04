@@ -599,10 +599,12 @@ static struct twl4030_ins sleep_on_seq[] __initdata = {
 /*
  * Turn off everything
  */
-	 {MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_RC, RES_TYPE_ALL, RES_TYPE2_R0,
-			RES_STATE_SLEEP), 4},
-	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R0,
-			RES_STATE_SLEEP), 4},
+	/* {MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_RC, RES_TYPE_ALL, RES_TYPE2_R0,
+			RES_STATE_SLEEP), 4},*/
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, 0, 1,
+			RES_STATE_SLEEP), 2},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, 0, 2,
+			RES_STATE_SLEEP), 2},
 };
 
 static struct twl4030_script sleep_on_script __initdata = {
@@ -611,26 +613,67 @@ static struct twl4030_script sleep_on_script __initdata = {
 	.flags  = TWL4030_SLEEP_SCRIPT,
 };
 
-static struct twl4030_ins wakeup_seq[] __initdata = {
+static struct twl4030_ins wakeup_p12_seq[] __initdata = {
 /*
  * Reenable everything
  */
-	{MSG_SINGULAR(DEV_GRP_NULL, RES_VUSB_1V5, RES_STATE_ACTIVE), 0x30},
-	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_PP_PR, RES_TYPE_ALL, RES_TYPE2_R0,
-			RES_STATE_ACTIVE), 0x37},
-	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R0,
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, 0, 1,
 			RES_STATE_ACTIVE), 0x2},
+
 };
 
-static struct twl4030_script wakeup_script __initdata = {
-	.script	= wakeup_seq,
-	.size	= ARRAY_SIZE(wakeup_seq),
-	.flags	= TWL4030_WAKEUP12_SCRIPT | TWL4030_WAKEUP3_SCRIPT,
+static struct twl4030_script wakeup_p12_script __initdata = {
+	.script	= wakeup_p12_seq,
+	.size	= ARRAY_SIZE(wakeup_p12_seq),
+	.flags	= TWL4030_WAKEUP12_SCRIPT,
+};
+
+static struct twl4030_ins wakeup_p3_seq[] __initdata = {
+/*
+ * Reenable everything
+ */
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, 0, 2,
+			RES_STATE_ACTIVE), 0x2},
+
+};
+
+static struct twl4030_script wakeup_p3_script __initdata = {
+	.script	= wakeup_p3_seq,
+	.size	= ARRAY_SIZE(wakeup_p3_seq),
+	.flags	= TWL4030_WAKEUP3_SCRIPT,
+};
+
+static struct twl4030_ins wrst_seq[] __initdata = {
+/*
+ * Reset twl4030.
+ * Reset VDD1 regulator.
+ * Reset VDD2 regulator.
+ * Reset VPLL1 regulator.
+ * Enable sysclk output.
+ * Reenable twl4030.
+ */
+	{MSG_SINGULAR(DEV_GRP_NULL, RES_RESET, RES_STATE_OFF), 2},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, 0, 1, RES_STATE_ACTIVE),
+		0x13},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_PP, 0, 3, RES_STATE_WRST), 0x13},
+	{MSG_SINGULAR(DEV_GRP_NULL, RES_VDD1, RES_STATE_WRST), 0x13},
+	{MSG_SINGULAR(DEV_GRP_NULL, RES_VDD2, RES_STATE_WRST), 0x13},
+	{MSG_SINGULAR(DEV_GRP_NULL, RES_VPLL1, RES_STATE_WRST), 0x35},
+	{MSG_SINGULAR(DEV_GRP_P3, RES_HFCLKOUT, RES_STATE_ACTIVE), 2},
+	{MSG_SINGULAR(DEV_GRP_NULL, RES_RESET, RES_STATE_ACTIVE), 2},
+};
+
+static struct twl4030_script wrst_script __initdata = {
+	.script = wrst_seq,
+	.size   = ARRAY_SIZE(wrst_seq),
+	.flags  = TWL4030_WRST_SCRIPT,
 };
 
 static struct twl4030_script *twl4030_scripts[] __initdata = {
-	&wakeup_script,
+	&wakeup_p12_script,
 	&sleep_on_script,
+	&wakeup_p3_script,
+	&wrst_script,
 };
 
 static struct twl4030_resconfig twl4030_rconfig[] __initdata = {
@@ -642,11 +685,11 @@ static struct twl4030_resconfig twl4030_rconfig[] __initdata = {
 	  .type = 1, .type2 = -1, .remap_off = RES_STATE_OFF,
 	  .remap_sleep = RES_STATE_OFF
 	},
-	{ .resource = RES_VPLL1, .devgroup = -1,
+	{ .resource = RES_VPLL1, .devgroup = DEV_GRP_P1,
 	  .type = 1, .type2 = -1, .remap_off = RES_STATE_OFF,
 	  .remap_sleep = RES_STATE_OFF
 	},
-	{ .resource = RES_VPLL2, .devgroup = -1,
+	{ .resource = RES_VPLL2, .devgroup = DEV_GRP_P1,
 	  .type = -1, .type2 = 3, .remap_off = -1, .remap_sleep = -1
 	},
 	{ .resource = RES_VAUX1, .devgroup = -1,
