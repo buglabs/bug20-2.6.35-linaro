@@ -497,6 +497,7 @@ v4l2_subdev_get_probe_crop(struct v4l2_subdev_fh *fh, unsigned int pad)
 	return &fh->probe_crop[pad];
 }
 
+extern const struct v4l2_file_operations v4l2_subdev_fops;
 
 static inline void v4l2_set_subdevdata(struct v4l2_subdev *sd, void *p)
 {
