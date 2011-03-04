@@ -302,6 +302,7 @@ int bmi_register_camera(struct bmi_device *bdev,
 		printk (KERN_ERR "Unable to create "                  
 		       "class_device for bmi_cam%i; errno = %ld\n",
 		       slotnum, PTR_ERR(pdat->class_dev));             
+		pdat->class_dev = NULL;
 		cdev_del (&pdat->cdev);
 		ret = -ENODEV;
 		goto err;
@@ -334,6 +335,7 @@ int bmi_unregister_camera(struct bmi_device *bdev)
 			device_destroy (bmi_class, MKDEV(major, slotnum));
 			fops = pdat->cdev.ops;
 			cdev_del (&pdat->cdev);
+			bmi_device_set_drvdata (bdev, 0);
 			kfree(fops);
 			kfree(pdat->pdev);
 			kfree(pdat);

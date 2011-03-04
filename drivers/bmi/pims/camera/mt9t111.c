@@ -42,6 +42,7 @@ struct mt9t111_sensor {
 	u8 test_pat_id;
 	u8 colorfx_id;
 	u8 streaming;
+	u8 reset;
 	
 };
 
@@ -49,6 +50,7 @@ int mt9t111_read_reg(struct i2c_client *client, u16 reg, u16 *val)
 {
 	int ret;
 	u8 data[2];
+	mdelay(5);
 	data[0] = (reg >> 8) & 0x00FF;
 	data[1] = (reg >> 0) & 0x00FF;
 	ret = i2c_master_send(client, data, 2); // send register addr first
@@ -58,7 +60,7 @@ int mt9t111_read_reg(struct i2c_client *client, u16 reg, u16 *val)
 		printk(KERN_ERR "%s: i2c_transfer() failed...%d\n", __func__, ret);
 	} else {
 		*val = ((data[0] & 0x00ff) << 8) | (data[1] & 0x00ff);	
-		//printk(KERN_DEBUG "%s: Read register 0x%x. value = 0x%x\n", __func__, reg, *val);
+		//printk(KERN_ERR "//%s: Read register 0x%x. value = 0x%x\n", __func__, reg, *val);
 	}
 	return 0;
 }
@@ -77,9 +79,10 @@ EXPORT_SYMBOL(mt9t111_read_reg);
 int mt9t111_write_reg(struct i2c_client *client, u16 reg, u16 val)
 {
 	struct i2c_msg msg[1];
-	u8 data[20];
+	u8 data[4];
 	int err;
 
+	mdelay(5);
 	msg->addr = client->addr;
 	msg->flags = 0;
 	msg->len = 4;
@@ -206,7 +209,13 @@ static int mt9t111_detect(struct i2c_client *client)
 
 static int mt9t111_refresh(struct i2c_client *client)
 {
-	return mt9t111_write_var(client, 0x8400, 0x0006); // Refresh Seq. Mode
+	int err;
+	err = mt9t111_write_var(client, 0x8400, 0x0006); // Refresh Seq. Mode
+	if(err < 0)
+		return err;
+	mdelay(500); // found a delay necessary, not sure why, though
+//	return mt9t111_write_var(client, 0x8400, 0x0005); // Refresh Seq.
+	return 0;
 }
 
 static int mt9t111_enable_pll(struct i2c_client *client)
@@ -242,6 +251,7 @@ static int mt9t111_enable_pll(struct i2c_client *client)
 	return 0;
 }
 
+#if 0
 static int mt9t111_sw_reset(struct i2c_client *client)
 {
 	int err;
@@ -258,7 +268,6 @@ static int mt9t111_sw_reset(struct i2c_client *client)
 	return 0;
 }
 
-#if 0
 static int mt9t111_soft_standby(struct i2c_client *client, int on)
 {
 	int err,i;
@@ -296,27 +305,34 @@ static int mt9t111_loaddefault(struct i2c_client *client)
 	sensor->test_pat_id = 0;
 	sensor->colorfx_id = 0;
 
-	err = mt9t111_enable_pll(client);
-	if(err < 0) 
+	if(1) {
+		err = mt9t111_enable_pll(client);
+	} else {
+		err = MT9T111_APPLY_PATCH(client, bypass_pll);
+	}
+	if(err < 0)
 		return err;
 
 	err = MT9T111_APPLY_PATCH(client, mt9t111_init_regs);
 	if(err < 0)
 		return err;
 
-	err = MT9T111_APPLY_PATCH(client, def_regs1);
-	if(err < 0)
-		return err;
-
-	err = MT9T111_APPLY_PATCH(client, patch_rev6);
-	if(err < 0)
-		return err;
-
-	err = MT9T111_APPLY_PATCH(client, def_regs2);
-	if(err < 0)
-		return err;
-
-	return mt9t111_refresh(client);
+	sensor->reset = 1;
+	//err = MT9T111_APPLY_PATCH(client, def_regs1);
+	//if(err < 0)
+	//	return err;
+	//
+	//err = MT9T111_APPLY_PATCH(client, patch_rev6);
+	//if(err < 0)
+	//	return err;
+	//
+	//err = MT9T111_APPLY_PATCH(client, def_regs2);
+	//if(err < 0)
+	//	return err;
+	//
+	//return mt9t111_refresh(client);
+	//sensor->format.width = sensor->format.height = 1;
+	return 0;
 }
 
 int mt9t111_set_power(struct i2c_client *client, int on)
@@ -324,10 +340,6 @@ int mt9t111_set_power(struct i2c_client *client, int on)
 	int ret = 0;
 	if(on) {
 		ret = mt9t111_detect(client);
-		if(ret < 0)
-			return ret;
-
-		ret = mt9t111_sw_reset(client);
 		if(ret < 0)
 			return ret;
 	}
@@ -341,6 +353,9 @@ int mt9t111_s_stream(struct i2c_client *client, int streaming)
 	int ret;
 	if(streaming) {
 		ret = mt9t111_loaddefault(client);
+		if(ret < 0)
+			return ret;
+		ret = mt9t111_set_format(client, &sensor->format);
 		if(ret < 0)
 			return ret;
 		sensor->streaming = 1;
@@ -360,9 +375,9 @@ struct mt9t111_format {
 
 
 struct mt9t111_format mt9t111_fmt[] = {
-	{ {1040, 784}, {2048, 1536}, { 1,  5 } },
-	{ {680,  514}, {1024,  768}, { 1, 20 } },
-	{ { 32,   32}, { 664,  498}, { 1, 22 } },
+	{ {1040, 784}, {2048, 1536}, { 20, 69  } },
+	{ {680,  514}, {1024,  768}, { 1,  10  } },
+	{ { 32,   32}, { 664,  498}, { 1,  14  } },
 };
 
 u32 mt9t111_mbus_codes[] = {
@@ -396,6 +411,15 @@ int mt9t111_set_format(struct i2c_client *client, struct v4l2_mbus_framefmt *fmt
 {
 	int ret;
 	struct mt9t111_sensor *sensor = i2c_get_clientdata(client);
+
+	if(sensor->format.width  == fmt->width  &&
+	   sensor->format.height == fmt->height &&
+	   sensor->format.code   == fmt->code && 
+	   !sensor->reset) {
+		printk(KERN_INFO "%s: Sensor already in requested format (%dx%d).\n", __func__, fmt->width, fmt->height);
+		return 0;
+	}
+	sensor->reset = 0;
 
 	// clamp width and height to multiples of 16
 	fmt->width  = (fmt->width  / 16) * 16;
@@ -898,16 +922,17 @@ static int mt9t111_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, sensor);
 	sensor->client = client;
-	sensor->format.width        = 640;
-	sensor->format.height       = 480;
+	sensor->format.width        = 1024;
+	sensor->format.height       = 768;
 	sensor->format.code         = V4L2_MBUS_FMT_YUYV16_1X16;
 	sensor->format.colorspace   = V4L2_COLORSPACE_SRGB;
 	sensor->format.field        = V4L2_FIELD_NONE;
 	sensor->frame_interval.numerator = 1;
 	sensor->frame_interval.denominator= 22;
 	sensor->test_pat_id = 0;
-	sensor->colorfx_id = 0;
-	sensor->streaming = 0;
+	sensor->colorfx_id  = 0;
+	sensor->streaming   = 0;
+	sensor->reset       = 1;
 	return 0;
 }
 
