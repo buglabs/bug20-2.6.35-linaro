@@ -427,4 +427,13 @@ config INPUT_ADXL34X_SPI
 	  To compile this driver as a module, choose M here: the
 	  module will be called adxl34x-spi.
 
+config INPUT_ML8953
+	tristate "OKI ML8953 Three-Axis Digital Accelerometer"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have a Accelerometer interface using the
+	  ML8953 controller, and your board-specific initialization
+	  code includes that in its table of devices.
+
 endif
