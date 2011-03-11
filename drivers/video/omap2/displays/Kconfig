@@ -7,6 +7,12 @@ config PANEL_GENERIC
 	  Generic panel driver.
 	  Used for DVI output for Beagle and OMAP3 SDP.
 
+config PANEL_DVI
+        tristate "Generic DVI Panel"
+        help
+	  Generic panel driver.
+	  Used for DVI output for Buglabs Video module.
+
 config PANEL_VGA
         tristate "Generic VGA Panel"
         depends on OMAP2_DSS
