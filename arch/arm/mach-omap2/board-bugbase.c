@@ -273,7 +273,7 @@ static struct omap_dss_device bugbase_omap_vga_device = {
 static struct omap_dss_device bugbase_omap_dvi_device = {
 	.type                = OMAP_DISPLAY_TYPE_DPI,
 	.name                = "dvi",
-	.driver_name         = "generic_panel",
+	.driver_name         = "dvi_panel",
 	.phy.dpi.data_lines  = 24,
 	.platform_enable     = bugbase_omap_panel_enable_dvi,
 	.platform_disable    = bugbase_omap_panel_disable_dvi,
@@ -288,7 +288,7 @@ struct omap_dss_device *bugbase_omap_display_devices[] = {
 static struct omap_dss_board_info bugbase_omap_dss_data = {
 	.num_devices	     = ARRAY_SIZE(bugbase_omap_display_devices),
 	.devices	     = bugbase_omap_display_devices,
-	.default_device	     = &bugbase_omap_lcd_device,
+	.default_device	     = &bugbase_omap_dvi_device,
 };
 
 struct platform_device bugbase_omap_dss_device = {
