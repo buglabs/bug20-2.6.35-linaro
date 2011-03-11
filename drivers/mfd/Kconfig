@@ -184,6 +184,13 @@ config TWL4030_CODEC
 	select MFD_CORE
 	default n
 
+config TWL4030_PWM
+	bool "Support PWM outputs on TWL4030 family chips"
+	depends on TWL4030_CORE
+	help
+	  Say yes here if you want to use the PWM outputs on the
+	  TWL4030 family chips.
+
 config MFD_TC35892
 	bool "Support Toshiba TC35892"
 	depends on I2C=y && GENERIC_HARDIRQS

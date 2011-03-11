@@ -38,7 +38,7 @@ obj-$(CONFIG_SC16IS_CORE)	+= sc16is-core.o
 obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
 obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
 obj-$(CONFIG_TWL4030_CODEC)	+= twl4030-codec.o
-
+obj-$(CONFIG_TWL4030_PWM)	+= twl4030-pwm.o
 obj-$(CONFIG_MFD_MC13783)	+= mc13783-core.o
 
 obj-$(CONFIG_MFD_CORE)		+= mfd-core.o

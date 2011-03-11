@@ -570,6 +570,17 @@ static struct platform_device leds_pwm =
 		},
 };
 
+static struct platform_device bug_twl_pwm_a = {
+  .name = "twl4030_pwm",
+  .id = 0,
+};
+
+static struct platform_device bug_twl_pwm_b = {
+  .name = "twl4030_pwm",
+  .id = 1,
+};
+
+
 static int bug_twl_gpio_setup(struct device *dev,
 		unsigned gpio, unsigned ngpio)
 {
@@ -884,6 +895,8 @@ static struct platform_device *bugbase_peripheral_devices[] __initdata = {
 	&bug_fixed_sd,
 	&bug_fixed_1_8,
 	&bugbase_omap_dss_device,
+	&bug_twl_pwm_a,
+	&bug_twl_pwm_b,
 	&leds_pwm,
 	&leds_gpio,
 };
