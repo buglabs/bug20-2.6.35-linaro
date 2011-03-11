@@ -81,8 +81,8 @@ static struct omap_video_timings vga_panel_timings = {
 
 static int vga_panel_probe(struct omap_dss_device *dssdev)
 {
-  //dssdev->panel.config =  OMAP_DSS_LCD_TFT | OMAP_DSS_LCD_IVS | 
-	                               OMAP_DSS_LCD_IHS | OMAP_DSS_LCD_IPC;
+  	//dssdev->panel.config =  OMAP_DSS_LCD_TFT | OMAP_DSS_LCD_IVS | 
+	//                               OMAP_DSS_LCD_IHS | OMAP_DSS_LCD_IPC;
 	//dssdev->panel.acb = 32;
 	//dssdev->panel.acb = 48;
 	//dssdev->panel.recommended_bpp = 24;
@@ -102,9 +102,18 @@ static int vga_panel_enable(struct omap_dss_device *dssdev)
 {
 	int r = 0;
 
-	if (dssdev->platform_enable)
-		r = dssdev->platform_enable(dssdev);
+	r = omapdss_dpi_display_enable(dssdev);
+	if (r)
+		return(r);
 
+	if (dssdev->platform_enable) {
+		r = dssdev->platform_enable(dssdev);
+		if (r) {
+			omapdss_dpi_display_disable(dssdev);
+			return r;
+		}
+	}
+	dssdev->state = OMAP_DSS_DISPLAY_ACTIVE;
 	return r;
 }
 
@@ -112,6 +121,8 @@ static void vga_panel_disable(struct omap_dss_device *dssdev)
 {
 	if (dssdev->platform_disable)
 		dssdev->platform_disable(dssdev);
+	omapdss_dpi_display_disable(dssdev);
+	dssdev->state = OMAP_DSS_DISPLAY_DISABLED;
 }
 
 static int vga_panel_suspend(struct omap_dss_device *dssdev)
