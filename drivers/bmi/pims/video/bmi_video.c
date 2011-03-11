@@ -399,10 +399,10 @@ static void enable_dvi(struct bmi_video *video)
 	//set omapfb
 	info = registered_fb[0];
 	var = info->var;
-	var.xres = 1280;
-	var.yres = 1024;
-	var.xres_virtual = 1280;
-	var.yres_virtual = 1024;
+	var.xres = 1024;
+	var.yres = 768;
+	var.xres_virtual = 1024;
+	var.yres_virtual = 768;
         var.activate = 128;             //Force update
 
         err = fb_set_var(info, &var);	
