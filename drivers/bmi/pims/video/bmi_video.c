@@ -240,7 +240,7 @@ int bmi_video_probe(struct bmi_device *bdev)
 		omap_dss_get_device(dssdev);
 
 		if (dssdev->state)
-		        dssdev->platform_disable(dssdev);
+		        dssdev->driver->disable(dssdev);
 		
 		if (strnicmp(dssdev->name, "dvi", 3) == 0)
 		        dvi_disp = dssdev;
@@ -313,12 +313,12 @@ void bmi_video_remove(struct bmi_device *bdev)
 	if (video->vmode == DVI)
 	    tfp410_disable(video->dvi_controller);
 	if (dvi_disp->state)
-	        dvi_disp->platform_disable(dvi_disp);
+	        dvi_disp->driver->disable(dvi_disp);
 
 	if (video->vmode == VGA)
 	    ths8200_disable(video->vga_controller);
 	if (vga_disp->state)
-	        vga_disp->platform_disable(vga_disp);
+	        vga_disp->driver->disable(vga_disp);
 
 	i2c_unregister_device(video->dvi_controller);
 	i2c_unregister_device(video->vga_controller);
@@ -350,16 +350,18 @@ static void enable_vga(struct bmi_video *video)
         int err;
         struct fb_info *info;
 	struct fb_var_screeninfo var;
+	struct omap_overlay_manager *mgr;
 	
 	printk (KERN_INFO "bmi_video.c: setting up VGA Output...\n");
 
 	//disable dvi (tfp)
 	tfp410_disable(video->dvi_controller);
-
+	
 	//disable dvi (dss)
 	if (dvi_disp->state)
-	    dvi_disp->platform_disable(dvi_disp);
-
+		dvi_disp->driver->disable(dvi_disp);
+	mgr = omap_dss_get_overlay_manager(0);
+	err = mgr->unset_device(mgr);
 	//set omapfb
 	info = registered_fb[0];
 	var = info->var;	
@@ -374,9 +376,11 @@ static void enable_vga(struct bmi_video *video)
 	        printk(KERN_ERR "bmi_video.c: enable_vga: error resizing omapfb");
 
 	//enable vga (dss)
-	if (vga_disp->state != 1)
-	        vga_disp->platform_enable(vga_disp);
-
+	if (vga_disp->state != 1) {
+		mgr->set_device(mgr, vga_disp);
+		mgr->apply(mgr);
+	        vga_disp->driver->enable(vga_disp);
+	}
 	//init vga (ths)
 	ths8200_init(video->vga_controller);
 }
@@ -386,16 +390,18 @@ static void enable_dvi(struct bmi_video *video)
         int err;
 	struct fb_info *info;
 	struct fb_var_screeninfo var;
-
-       	printk (KERN_INFO "bmi_video.c: setting up DVI Output...\n");
+	struct omap_overlay_manager *mgr;
+       	
+	printk (KERN_INFO "bmi_video.c: setting up DVI Output...\n");
 
 	//disable vga (tfp)
 	ths8200_disable(video->vga_controller);
 
 	//disable vga (dss)
 	if (vga_disp->state)
-	    vga_disp->platform_disable(vga_disp);
-	
+	    vga_disp->driver->disable(vga_disp);
+	mgr = omap_dss_get_overlay_manager(0);
+	err = mgr->unset_device(mgr);
 	//set omapfb
 	info = registered_fb[0];
 	var = info->var;
@@ -410,9 +416,11 @@ static void enable_dvi(struct bmi_video *video)
 	        printk(KERN_ERR "bmi_video.c: enable_dvi: error resizing omapfb");
 
 	//enable dvi (dss)
-	if (dvi_disp->state != 1)
-	        dvi_disp->platform_enable(dvi_disp);
-
+	if (dvi_disp->state != 1) {
+		mgr->set_device(mgr, dvi_disp);
+		mgr->apply(mgr);
+	        dvi_disp->driver->enable(dvi_disp);
+	}
 	//init dvi (tfp)
 	tfp410_init(video->dvi_controller);
 }
