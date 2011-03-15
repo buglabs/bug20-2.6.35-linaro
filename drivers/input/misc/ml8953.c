@@ -1,3 +1,25 @@
+/**
+ * ml8953.c - OKI ML8953 Accelerometer driver
+ *
+ * Copyright (C) 2010 Bug Labs Inc.
+ *      Matt Isaacs <izzy@buglabs.net>
+ *
+ * Based an Analog Devices adxl34x accelerometer drivers.
+ *
+ * This file is subject to the terms and conditions of the GNU General
+ * Public License. See the file "COPYING" in the main directory of this
+ * archive for more details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include <linux/input.h>	/* BUS_I2C */
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -120,9 +142,7 @@ static int ml8953_disable(struct ml8953 *ac)
 		if(ml8953_smbus_write(client, ACC_INTMSK, *data))
 			error = -ENODEV;
 
-		mutex_lock(&ac->mutex);
 		cancel_work_sync(&ac->work);
-		mutex_unlock(&ac->mutex);
 		ac->disabled = 1;
 	}
 	return error;
