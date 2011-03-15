@@ -29,6 +29,7 @@
 #include <linux/crc32.h>
 #include <linux/usb/usbnet.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 #include "smsc95xx.h"
 
 #define SMSC_CHIPNAME			"smsc95xx"
@@ -62,6 +63,14 @@ struct usb_context {
 static int turbo_mode = true;
 module_param(turbo_mode, bool, 0644);
 MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
+
+//MAC paramter handling
+static void parse_mac(struct usbnet *dev, char *mac);
+static char *mac_store;
+static char *token;
+static char mac[18] = "";
+module_param_string(mac, mac, sizeof(mac), 0);
+MODULE_PARM_DESC(mac, "MAC Address");
 
 static int smsc95xx_read_reg(struct usbnet *dev, u32 index, u32 *data)
 {
@@ -637,6 +646,26 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
 	return generic_mii_ioctl(&dev->mii, if_mii(rq), cmd, NULL);
 }
 
+static void parse_mac(struct usbnet *dev, char *mac)
+{
+        static int i = 0;  
+	while ((token = strsep(&mac, ":")) != NULL) {
+		dev->net->dev_addr[i] = simple_strtoull(token, NULL, 16);
+		i++;
+	}
+
+	if (is_valid_ether_addr(dev->net->dev_addr)) {
+	        //mac param valid so store it
+	        mac_store = dev->net->dev_addr;
+		//mac param valid so use it
+		if (netif_msg_ifup(dev))
+			netif_dbg(dev, ifup, dev->net, "MAC address set from params");
+		return;
+	}
+	netdev_warn(dev->net, "Invalid MAC parameters");
+	return;
+}
+
 static void smsc95xx_init_mac_address(struct usbnet *dev)
 {
 	/* try reading mac address from EEPROM */
@@ -648,6 +677,13 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
 			return;
 		}
 	}
+	/* try getting mac address from module paramter */
+	if (strcmp(mac, "") != 0) {
+	        parse_mac(dev, mac);
+		return;
+	}
+	else
+	        netif_dbg(dev, ifup, dev->net, "MAC mod param not set");
 
 	/* no eeprom, or eeprom values are invalid. generate random MAC */
 	random_ether_addr(dev->net->dev_addr);
