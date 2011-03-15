@@ -161,7 +161,7 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 	struct class *bmi_class;
 	struct i2c_adapter *adap;
 	struct omap_dss_device *dssdev;
-
+	struct omap_overlay_manager *mgr;
 	struct fb_info *info;
 	struct fb_var_screeninfo var;
 
@@ -203,6 +203,19 @@ int bmi_lcd_probe(struct bmi_device *bdev)
 
 	if (err)
 		printk(KERN_ERR "bmi_lcd.c: probe: error resizing omapfb");
+	
+		if (err)
+		printk(KERN_ERR "bmi_lcd.c: probe: error resizing omapfb");
+	mgr = omap_dss_get_overlay_manager(0);
+	err = mgr->unset_device(mgr);
+	if (err)
+		printk(KERN_ERR "%s : Manager unset error %d\n", __FUNCTION__, err); 
+	err = mgr->set_device(mgr, this_disp);
+	if (err)
+		printk(KERN_ERR "%s : Manager set error %d\n", __FUNCTION__, err); 
+	err = mgr->apply(mgr);
+	if (err)
+		printk(KERN_ERR "%s : Manager apply error %d\n", __FUNCTION__, err); 
 
 	// Enable this display
 	this_disp->driver->enable(this_disp);
