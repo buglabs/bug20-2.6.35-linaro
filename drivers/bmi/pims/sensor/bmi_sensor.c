@@ -2438,12 +2438,12 @@ int bmi_sensor_probe(struct bmi_device *bdev)
     bmi_class = bmi_get_class();
     sensor->class_dev = device_create(bmi_class, NULL,
                                       MKDEV(major, slot), NULL,
-                                      "bmi_sensor_cntl_m%i", slot+1);
+                                      "bmi_sensor_control_m%i", slot);
 
     if(IS_ERR(sensor->class_dev)) {
         printk(KERN_ERR "Unable to create "
-               "class_device for bmi_sensor_cntl_m%i; errno = %ld\n",
-               slot+1, PTR_ERR(sensor->class_dev));
+               "class_device for bmi_sensor_m%i; errno = %ld\n",
+               slot, PTR_ERR(sensor->class_dev));
         goto error;
     }
 
@@ -2549,7 +2549,7 @@ int bmi_sensor_probe(struct bmi_device *bdev)
     sensor->aprox_int_en = 0;
     sensor->aprox_int_fl = 0;
 
-    sprintf(sensor->workqueue_name, "sensor_m%d", slot + 1);
+    sprintf(sensor->workqueue_name, "sensor_m%d", slot);
     sensor->workqueue = create_singlethread_workqueue(sensor->workqueue_name);
     if (!sensor->workqueue) {
         printk(KERN_ERR "bmi_sensor.c: Can't create_singlethread_workqueue() in slot %d\n",

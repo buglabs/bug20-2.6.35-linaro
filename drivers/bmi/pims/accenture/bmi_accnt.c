@@ -279,12 +279,12 @@ int bmi_accnt_probe(struct bmi_device *bdev)
 
 	// Create class device 
 	bmi_class = bmi_get_class ();                            
-	accnt->class_dev = device_create (bmi_class, NULL, MKDEV (major, slot), NULL, "bmi_accnt_control_m%i", slot+1);  
+	accnt->class_dev = device_create (bmi_class, NULL, MKDEV (major, slot), NULL, "bmi_accnt_control_m%i", slot);  
 								     
 	if (IS_ERR(accnt->class_dev)) {                                
 		printk (KERN_ERR "Unable to create "                  
 		       "class_device for bmi_accnt_m%i; errno = %ld\n",
-		       slot+1, PTR_ERR(accnt->class_dev));             
+		       slot, PTR_ERR(accnt->class_dev));             
 		accnt->class_dev = NULL;                               
 		cdev_del (&accnt->cdev);
 		return -ENODEV;

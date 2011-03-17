@@ -192,11 +192,11 @@ int bmi_gsm_probe(struct bmi_device *bdev)
     return status;
 
   bmi_class = bmi_get_class();
-  gsmod->class_dev = device_create (bmi_class, NULL, MKDEV(major, slot), NULL, "bmi_gsm_ctl_m%i", slot + 1);
+  gsmod->class_dev = device_create (bmi_class, NULL, MKDEV(major, slot), NULL, "bmi_gsm_control_m%i", slot);
 
   if (IS_ERR(gsmod->class_dev))
     {
-      printk(KERN_ERR "Unable to create class device for bmi_gsm_ctl_m%i...", slot + 1);
+      printk(KERN_ERR "Unable to create class device for bmi_gsm_m%i...", slot);
       gsmod->class_dev = NULL;
       cdev_del(&gsmod->cdev);
       return -ENODEV;

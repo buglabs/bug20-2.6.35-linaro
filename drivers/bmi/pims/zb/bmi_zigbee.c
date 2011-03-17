@@ -926,7 +926,7 @@ int bmi_zb_probe(struct bmi_device *bdev)
 	// Initialize GPIOs, turn on Red and Green LEDs.
 	if(config_ports(zb))
 	{
-		printk(KERN_ERR "Unable to configure ZB port pins slot %d\n",(slot+1));
+		printk(KERN_ERR "Unable to configure ZB port pins slot %d\n",(slot));
 		return -EFAULT;
 	}
 
@@ -1018,20 +1018,20 @@ int bmi_zb_probe(struct bmi_device *bdev)
 	printk(KERN_INFO "bmi_zb.c: ZIGBEE create class device\n");
 	bmi_class = bmi_get_bmi_class();
 	zb->class_dev = device_create(bmi_class, NULL, dev_id, zb, 
-	                                       "bmi_zb%i", slot + 1);
+	                                       "bmi_zb%i", slot);
 
 	if(IS_ERR(zb->class_dev))
 	{
 		printk(KERN_ERR "Unable to create "
 		                "class_device for bmi_zb_%i; errno = %ld\n",
-		                slot+1, PTR_ERR(zb->class_dev));
+		                slot, PTR_ERR(zb->class_dev));
 		zb->class_dev = NULL;
 		err = -ENODEV;
 		goto error;
 	}
 
 	/* Allocate network device */
-	sprintf(name, "zb%d",(slot+1));
+	sprintf(name, "zb%d",(slot));
 	netdev = alloc_netdev(sizeof(struct net_zb),name,zb_net_setup);
 	if(!netdev)
 	{
@@ -1047,7 +1047,7 @@ int bmi_zb_probe(struct bmi_device *bdev)
 	err = init_zaccel(zb);
 	if(err < 0)
 	{
-		printk(KERN_ERR "zb%d: Z-Accel device not start\n",(slot+1));
+		printk(KERN_ERR "zb%d: Z-Accel device not start\n",(slot));
 		goto error1;
 	}
 

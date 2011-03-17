@@ -620,7 +620,7 @@ int bmi_vh_probe(struct bmi_device *bdev)
 	if (IS_ERR(vh->class_dev)) {                                
 		printk (KERN_ERR "Unable to create "                  
 		       "class_device for bmi_vh_m%i; errno = %ld\n",
-		       slot+1, PTR_ERR(vh->class_dev));             
+		       slot, PTR_ERR(vh->class_dev));             
 		vh->class_dev = NULL;                               
 		cdev_del (&vh->cdev);
 		return -ENODEV;

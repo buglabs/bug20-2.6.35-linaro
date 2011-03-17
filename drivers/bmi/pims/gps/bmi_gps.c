@@ -345,12 +345,12 @@ int bmi_gps_probe(struct bmi_device *bdev)
 
 	//Create class device 
 	bmi_class = bmi_get_class ();                            
-	gps->class_dev = device_create(bmi_class, NULL, MKDEV(major, slot), gps, "bmi_gps_control_m%i", slot+1);  
+	gps->class_dev = device_create(bmi_class, NULL, MKDEV(major, slot), gps, "bmi_gps_control_m%i", slot);  
 								     
 	if (IS_ERR(gps->class_dev)) {                                
 		printk(KERN_ERR "Unable to create "                  
 		       "class_device for bmi_gps_m%i; errno = %ld\n",
-		       slot+1, PTR_ERR(gps->class_dev));             
+		       slot, PTR_ERR(gps->class_dev));             
 		gps->class_dev = NULL;
 		cdev_del (&gps->cdev);         
 	}                                                            
