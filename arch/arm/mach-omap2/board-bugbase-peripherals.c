@@ -483,11 +483,9 @@ static struct regulator_consumer_supply bug_vmmc1_supply =
 	REGULATOR_SUPPLY("vmmc", "mmci-omap-hs.0");
 
 
-/*
-static struct regulator_consumer_supply bug_vaux2_supply = {
-	.supply			= "vaux2",
-};
-*/
+
+static struct regulator_consumer_supply bug_vaux2_supply =
+	REGULATOR_SUPPLY("hsusb1", "ehci-omap.0");
 
 /* VMMC1 for MMC1 pins CMD, CLK, DAT0..DAT3 (20 mA, plus card == max 220 mA) */
 static struct regulator_init_data bug_vmmc1 = {
@@ -518,10 +516,8 @@ static struct regulator_init_data bug_vaux2 = {
 					| REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
 	},
-	/*
 	.num_consumer_supplies	= 1,
 	.consumer_supplies	= &bug_vaux2_supply,
-	*/
 };
 
 
