@@ -1,3 +1,23 @@
+/**
+ * sc16is-gpio.c - NXP SC16IS754 GPIO driver
+ *
+ * Copyright (C) 2010 Bug Labs Inc.
+ *      Matt Isaacs <izzy@buglabs.net>
+ *
+ * This file is subject to the terms and conditions of the GNU General
+ * Public License. See the file "COPYING" in the main directory of this
+ * archive for more details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -15,7 +35,7 @@ struct sc16is_gpio_chip {
   unsigned char reg_state;
   unsigned char reg_direction;
   struct gpio_chip gpio_chip;
-  char **names;
+  const char *const *names;
 };
 
 static int sc16is_gpio_direction_input(struct gpio_chip *gc, unsigned off)
@@ -127,9 +147,6 @@ static int sc16is_gpio_probe(struct platform_device *pdev)
   struct sc16is_gpio_platform_data *pdata = pdev->dev.platform_data;
   struct sc16is_gpio_chip *chip;
   int res = 0;
-  
-  printk(KERN_INFO "SC16IS: GPIO Probe Called...0x%x \n",pdata->gpio_base);
-  printk(KERN_INFO "SC16IS: GPIO Setup...0x%x \n",pdata->setup);
 
   chip = kzalloc(sizeof(struct sc16is_gpio_chip), GFP_KERNEL);
   if (!chip)
