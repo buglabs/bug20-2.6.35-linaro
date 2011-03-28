@@ -12,6 +12,14 @@ field##_show(struct device *dev, struct device_attribute *attr, char *buf)				\
 	return sprintf (buf, format_string, pdev->field);		\
 }
 
+static ssize_t modalias_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct bmi_device *pdev;
+
+	pdev = to_bmi_device (dev);
+	return sprintf (buf, "bmi:v%04Xp%04Xr%04X\n", pdev->vendor, pdev->product, pdev->revision);
+}
+
 static ssize_t description_show(struct device *dev, struct device_attribute *attr, char *buf)
 {									
 	struct bmi_device *pdev;					
@@ -66,6 +74,7 @@ struct device_attribute bmi_dev_attrs[] = {
 	__ATTR_RO(product),
 	__ATTR_RO(revision),
 	__ATTR_RO(description),
+	__ATTR_RO(modalias),
 	__ATTR(suspend, 0664, suspend_show, suspend_store),
 	__ATTR_NULL,
 };
