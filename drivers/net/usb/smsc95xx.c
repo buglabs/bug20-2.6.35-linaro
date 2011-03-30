@@ -66,7 +66,7 @@ MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
 
 //MAC paramter handling
 static void parse_mac(struct usbnet *dev, char *mac);
-static char *mac_store;
+static char mac_store[6];
 static char *token;
 static char mac[18] = "";
 module_param_string(mac, mac, sizeof(mac), 0);
@@ -649,15 +649,21 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
 static void parse_mac(struct usbnet *dev, char *mac)
 {
         static int i = 0;  
-	while ((token = strsep(&mac, ":")) != NULL) {
-		dev->net->dev_addr[i] = simple_strtoull(token, NULL, 16);
+	while ((token = strsep(&mac, ":\0")) != NULL) {
+		dev->net->dev_addr[i] = simple_strtoul(token, NULL, 16);
 		i++;
 	}
 
 	if (is_valid_ether_addr(dev->net->dev_addr)) {
-	        //mac param valid so store it
-	        mac_store = dev->net->dev_addr;
+		memcpy(mac_store, dev->net->dev_addr, 6);
 		//mac param valid so use it
+		if (netif_msg_ifup(dev))
+			netif_dbg(dev, ifup, dev->net, "MAC address set from params");
+		return;
+	}
+	else if (is_valid_ether_addr(mac_store)) {
+		//mac param valid so use it
+		memcpy(dev->net->dev_addr, mac_store, 6);
 		if (netif_msg_ifup(dev))
 			netif_dbg(dev, ifup, dev->net, "MAC address set from params");
 		return;
