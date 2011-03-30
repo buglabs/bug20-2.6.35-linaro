@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.35.9
-# Tue Mar 22 17:30:43 2011
+# Linux kernel version: 2.6.35.10
+# Wed Mar 30 11:47:07 2011
 #
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
@@ -1515,7 +1515,6 @@ CONFIG_VIDEO_CAPTURE_DRIVERS=y
 #
 # CONFIG_VIDEO_UPD64031A is not set
 # CONFIG_VIDEO_UPD64083 is not set
-# CONFIG_VIDEO_VIVI is not set
 # CONFIG_VIDEO_OMAP2_VOUT is not set
 # CONFIG_VIDEO_SAA5246A is not set
 # CONFIG_VIDEO_SAA5249 is not set
@@ -1669,20 +1668,7 @@ CONFIG_DISPLAY_SUPPORT=y
 # Console display driver support
 #
 CONFIG_DUMMY_CONSOLE=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
-# CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY is not set
-CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-CONFIG_FONTS=y
-CONFIG_FONT_8x8=y
-CONFIG_FONT_8x16=y
-# CONFIG_FONT_6x11 is not set
-# CONFIG_FONT_7x14 is not set
-# CONFIG_FONT_PEARL_8x8 is not set
-# CONFIG_FONT_ACORN_8x8 is not set
-# CONFIG_FONT_MINI_4x6 is not set
-# CONFIG_FONT_SUN8x16 is not set
-# CONFIG_FONT_SUN12x22 is not set
-# CONFIG_FONT_10x18 is not set
+# CONFIG_FRAMEBUFFER_CONSOLE is not set
 # CONFIG_LOGO is not set
 CONFIG_SOUND=y
 CONFIG_SOUND_OSS_CORE=y
