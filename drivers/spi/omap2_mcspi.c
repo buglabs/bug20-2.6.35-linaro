@@ -246,7 +246,7 @@ static void omap2_mcspi_force_cs(struct spi_device *spi, int cs_active)
 
 	index = spi->chip_select - cdata->config->num_cs;
 	if (index >= 0){
-		printk(KERN_INFO "force_cs: index: %d gpio: %d\n", index, cdata->config->gpio_cs[index]);
+		//printk(KERN_INFO "force_cs: index: %d gpio: %d\n", index, cdata->config->gpio_cs[index]);
 		gpio_direction_output(cdata->config->gpio_cs[index], !cs_active);
 	}
 
@@ -970,14 +970,14 @@ static void omap2_mcspi_work(struct work_struct *work)
 				}
 			}
 
-			if (t->delay_usecs)
-				udelay(t->delay_usecs);
-
 			/* ignore the "leave it on after last xfer" hint */
 			if (t->cs_change) {
 				omap2_mcspi_force_cs(spi, 0);
 				cs_active = 0;
 			}
+			if (t->delay_usecs)
+				udelay(t->delay_usecs);
+
 		}
 
 		/* Restore defaults if they were overriden */

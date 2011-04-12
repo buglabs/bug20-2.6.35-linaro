@@ -171,12 +171,14 @@ int avr_read_status (struct spi_device *spi, struct avr_regs *regs)
 	x[0].tx_buf = &cmd;
 	x[0].rx_buf = &sync;
 	x[0].delay_usecs = 400;
+	x[0].cs_change = 1;
 	spi_message_add_tail(&x[0], &message);
 
 	x[1].len = 1;
 	x[1].tx_buf = &dont_care;
 	x[1].rx_buf = &regs->status;
 	x[1].delay_usecs = 400;
+	x[1].cs_change = 1;
 	spi_message_add_tail(&x[1], &message);
 
 	err = spi_sync(spi, &message);
@@ -204,48 +206,56 @@ int avr_read_status_and_adc (struct spi_device *spi, struct avr_regs *regs)
 	x[0].tx_buf = &cmd;
 	x[0].rx_buf = &sync;
 	x[0].delay_usecs = 400;
+	x[0].cs_change = 1;
 	spi_message_add_tail(&x[0], &message);
 
 	x[1].len = 1;
 	x[1].tx_buf = &dont_care;
 	x[1].rx_buf = &regs->status;
 	x[1].delay_usecs = 400;
+	x[1].cs_change = 1;
 	spi_message_add_tail(&x[1], &message);
 
 	x[2].len = 1;
 	x[2].tx_buf = &dont_care;
 	x[2].rx_buf = &regs->adc0h;
 	x[2].delay_usecs = 400;
+	x[2].cs_change = 1;
 	spi_message_add_tail(&x[2], &message);
 
 	x[3].len = 1;
 	x[3].tx_buf = &dont_care;
 	x[3].rx_buf = &regs->adc0l;
 	x[3].delay_usecs = 400;
+	x[3].cs_change = 1;
 	spi_message_add_tail(&x[3], &message);
 
 	x[4].len = 1;
 	x[4].tx_buf = &dont_care;
 	x[4].rx_buf = &regs->adc1h;
 	x[4].delay_usecs = 400;
+	x[4].cs_change = 1;
 	spi_message_add_tail(&x[4], &message);
 
 	x[5].len = 1;
 	x[5].tx_buf = &dont_care;
 	x[5].rx_buf = &regs->adc1l;
 	x[5].delay_usecs = 400;
+	x[5].cs_change = 1;
 	spi_message_add_tail(&x[5], &message);
 
 	x[6].len = 1;
 	x[6].tx_buf = &dont_care;
 	x[6].rx_buf = &regs->adc2h;
 	x[6].delay_usecs = 400;
+	x[6].cs_change = 1;
 	spi_message_add_tail(&x[6], &message);
 
 	x[7].len = 1;
 	x[7].tx_buf = &dont_care;
 	x[7].rx_buf = &regs->adc2l;
 	x[7].delay_usecs = 400;
+	x[7].cs_change = 1;
 	spi_message_add_tail(&x[7], &message);
 
 	err = spi_sync(spi, &message);
@@ -354,30 +364,35 @@ int avr_read_timer_and_mode  (struct spi_device *spi, struct avr_regs *regs)
 	x[0].tx_buf = &cmd;
 	x[0].rx_buf = &sync;
 	x[0].delay_usecs = 400;
+	x[0].cs_change = 1;
 	spi_message_add_tail(&x[0], &message);
 
 	x[1].len = 1;
 	x[1].tx_buf = &dont_care;
 	x[1].rx_buf = &regs->timer_res;
 	x[1].delay_usecs = 400;
+	x[1].cs_change = 1;
 	spi_message_add_tail(&x[1], &message);
 
 	x[2].len = 1;
 	x[2].tx_buf = &dont_care;
 	x[2].rx_buf = &regs->timer_msb;
 	x[2].delay_usecs = 400;
+	x[2].cs_change = 1;
 	spi_message_add_tail(&x[2], &message);
 
 	x[3].len = 1;
 	x[3].tx_buf = &dont_care;
 	x[3].rx_buf = &regs->timer_lsb;
 	x[3].delay_usecs = 400;
+	x[3].cs_change = 1;
 	spi_message_add_tail(&x[3], &message);
 
 	x[4].len = 1;
 	x[4].tx_buf = &dont_care;
 	x[4].rx_buf = &regs->mode;
 	x[4].delay_usecs = 400;
+	x[4].cs_change = 1;
 	spi_message_add_tail(&x[4], &message);
 
 	err = spi_sync(spi, &message);
@@ -478,30 +493,35 @@ int avr_write_timer_and_mode (struct spi_device *spi, struct avr_regs *regs)
 	x[0].tx_buf = &cmd;
 	x[0].rx_buf = &sync;
 	x[0].delay_usecs = 400;
+	x[0].cs_change = 1;
 	spi_message_add_tail(&x[0], &message);
 
 	x[1].len = 1;
 	x[1].tx_buf = &regs->timer_res;
 	x[1].rx_buf = 0;
 	x[1].delay_usecs = 400;
+	x[1].cs_change = 1;
 	spi_message_add_tail(&x[1], &message);
 
 	x[2].len = 1;
 	x[2].tx_buf = &regs->timer_msb;
 	x[2].rx_buf = 0;
 	x[2].delay_usecs = 400;
+	x[2].cs_change = 1;
 	spi_message_add_tail(&x[2], &message);
 
 	x[3].len = 1;
 	x[3].tx_buf = &regs->timer_lsb;
 	x[3].rx_buf = 0;
 	x[3].delay_usecs = 400;
+	x[3].cs_change = 1;
 	spi_message_add_tail(&x[3], &message);
 
 	x[4].len = 1;
 	x[4].tx_buf = &regs->mode;
 	x[4].rx_buf = 0;
 	x[4].delay_usecs = 400;
+	x[4].cs_change = 1;
 	spi_message_add_tail(&x[4], &message);
 
 	err = spi_sync(spi, &message);

@@ -168,12 +168,30 @@ int mdacc_check_bdev_acc (struct acc *acc)
 
 // BMI Functions
 
+static ssize_t bmi_mdacc_reset_show(struct device *dev, 
+				    struct device_attribute *attr, char *buf)
+{
+	int len = 0;
+	int slot;
+
+	struct pim *mdacc = dev_get_drvdata(dev);
+
+	slot = mdacc->bdev->slot->slotnum;
+	bmi_slot_gpio_direction_out(slot, GPIO_1, 0);
+	mdelay(5);
+	bmi_slot_gpio_direction_out(slot, GPIO_1, 1);
+	len += sprintf(len+buf, "%d\n", 1);
+    	return len;
+}
+
+static DEVICE_ATTR(reset, 0664, bmi_mdacc_reset_show, NULL);
+
 int bmi_mdacc_probe(struct bmi_device *bdev)
 {	
 	int slot;
 	struct pim *pim;
 	int irq;
-	unsigned char tmp = 0;
+	unsigned char err = 0;
 
 	// Module GPIO use:
 	//					0     	1
@@ -188,6 +206,9 @@ int bmi_mdacc_probe(struct bmi_device *bdev)
 	bmi_device_set_drvdata(bdev, pim);
 	pim->bdev = bdev;
 
+	err = sysfs_create_file(&bdev->dev.kobj, &dev_attr_reset.attr);
+	if (err < 0)
+		printk(KERN_ERR "Error creating SYSFS entries...\n");
 
 	// Setup GPIOs for this slot
 
@@ -200,7 +221,7 @@ int bmi_mdacc_probe(struct bmi_device *bdev)
 	bmi_slot_spi_enable(slot);
 
 	//AVR Reset Active time
-	mdelay(1);
+	mdelay(10);
 
 
 	//Take AVR out of reset
@@ -212,18 +233,18 @@ int bmi_mdacc_probe(struct bmi_device *bdev)
 
 
 	switch (slot) {
-	case 0:
-		pim->name = "mdacc_m1";
-		break;
-	case 1:
-		pim->name = "mdacc_m2";
-		break;
-	case 2:
-		pim->name = "mdacc_m3";
-		break;
-	case 3:
-		pim->name = "mdacc_m4";
-		break;
+		case 0:
+			pim->name = "mdacc_m0";
+			break;
+		case 1:
+			pim->name = "mdacc_m1";
+			break;
+		case 2:
+			pim->name = "mdacc_m2";
+			break;
+		case 3:
+			pim->name = "mdacc_m3";
+			break;
 	}
 
 	irq = bdev->slot->status_irq;
@@ -231,20 +252,27 @@ int bmi_mdacc_probe(struct bmi_device *bdev)
 	if (mon_probe (&pim->mon, pim->name, irq, &pim->md, &pim->acc) ) {
 		printk (KERN_ERR "bmi_mdacc_probe() - mon_probe() failed.\n");
 		goto exit1;
-      	}
+	}
 	if (md_probe (&pim->md, slot, &pim->mon) ) {
 		printk (KERN_ERR "bmi_mdacc_probe() - md_probe() failed.\n");
 		goto exit2;
-      	}
+	}
 	if (acc_probe (&pim->acc, slot, &pim->mon) ) {
 		printk (KERN_ERR "bmi_mdacc_probe() - acc_probe() failed.\n");
 		goto exit3;
-      	}
+	}
 	if (ctl_probe (&pim->ctl, slot) ) {
 		printk (KERN_ERR "bmi_mdacc_probe() - ctl_probe() failed.\n");
 		goto exit4;
-      	}
+	}
 	bmi_slot_gpio_set_value (slot, RED_LED, 1); //Red + Green LEDs Off
+
+	/* Reset AVR */
+
+	bmi_slot_gpio_direction_out(bdev->slot->slotnum, GPIO_1, 0);
+	mdelay(5);
+	bmi_slot_gpio_direction_out(bdev->slot->slotnum, GPIO_1, 1);
+
 	return 0;
 
 exit4:
@@ -253,7 +281,7 @@ exit3:
 	md_remove (&pim->md, slot);
 exit2:
 	mon_remove (&pim->mon);
-	
+
 exit1:
 	bmi_slot_spi_disable(slot);
 	bmi_device_set_drvdata (bdev, 0);
@@ -275,7 +303,8 @@ void bmi_mdacc_remove(struct bmi_device *bdev)
 	acc_remove (&pim->acc, slot);
 	md_remove (&pim->md, slot);
 	mon_remove (&pim->mon);
-	
+	sysfs_remove_file(&bdev->dev.kobj, &dev_attr_reset.attr);
+
 	bmi_slot_spi_disable(slot);
 
 	bmi_device_set_drvdata (bdev, 0);
