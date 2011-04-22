@@ -410,13 +410,6 @@ static struct omap_musb_board_data musb_board_data = {
 static void __init bugbase_omap_init(void)
 {
 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-	platform_add_devices(bugbase_omap_devices,
-			ARRAY_SIZE(bugbase_omap_devices));
-	bugbase_peripherals_init();			
-	omap_serial_init();
-	bugbase_omap_display_init();
-	usb_musb_init(&musb_board_data);
-	usb_ehci_init(&ehci_pdata);
 
 	/* Ensure SDRC pins are mux'd for self-refresh */
 	omap_mux_init_signal("csi2_dy0.gpio_113", OMAP_PIN_INPUT);
@@ -436,10 +429,23 @@ static void __init bugbase_omap_init(void)
 	omap_mux_init_signal("mcbsp4_fsx.mcbsp4_fsx", OMAP_PIN_INPUT);
 	omap_mux_init_signal("mcbsp4_dr.mcbsp4_dr", OMAP_PIN_INPUT);
 	omap_mux_init_signal("mcbsp4_dx.mcbsp4_dx", OMAP_PIN_OUTPUT);
+
+	omap_mux_init_signal("etk_d5.sdmmc3_dat1", OMAP_PIN_INPUT_PULLUP);
 	
+	omap_mux_init_gpio(43, OMAP_PIN_INPUT);
 	omap_mux_init_gpio(53, OMAP_PIN_OUTPUT);
 	omap_mux_init_gpio(54, OMAP_PIN_OUTPUT);
 	omap_mux_init_gpio(64, OMAP_PIN_INPUT_PULLUP);
+	omap_mux_init_gpio(164, OMAP_PIN_INPUT);
+
+	platform_add_devices(bugbase_omap_devices,
+			ARRAY_SIZE(bugbase_omap_devices));
+	bugbase_peripherals_init();			
+	omap_serial_init();
+	bugbase_omap_display_init();
+	usb_musb_init(&musb_board_data);
+	usb_ehci_init(&ehci_pdata);
+
 	gen_gpio_settings();
 }
 

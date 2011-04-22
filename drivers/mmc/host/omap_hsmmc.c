@@ -28,15 +28,19 @@
 #include <linux/clk.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/core.h>
+#include <linux/mmc/card.h>
 #include <linux/io.h>
 #include <linux/semaphore.h>
 #include <linux/gpio.h>
 #include <linux/regulator/consumer.h>
 #include <plat/dma.h>
-#include <mach/hardware.h>
+#include <plat/hardware.h>
+#include <plat/clock.h>
 #include <plat/board.h>
 #include <plat/mmc.h>
 #include <plat/cpu.h>
+
+#define DEBUG			1
 
 /* OMAP HSMMC Host Controller Registers */
 #define OMAP_HSMMC_SYSCONFIG	0x0010
@@ -63,6 +67,7 @@
 #define SDVS30			(0x6 << 9)
 #define SDVS33			(0x7 << 9)
 #define SDVS_MASK		0x00000E00
+#define ENAWAKEUP		(1 << 2)
 #define SDVSCLR			0xFFFFF1FF
 #define SDVSDET			0x00000400
 #define AUTOIDLE		0x1
@@ -75,9 +80,12 @@
 #define CLKD_SHIFT		6
 #define DTO_MASK		0x000F0000
 #define DTO_SHIFT		16
+#define CIRQ_ENABLE		(1 << 8)
 #define INT_EN_MASK		0x307F0033
 #define BWR_ENABLE		(1 << 4)
 #define BRR_ENABLE		(1 << 5)
+#define CTPL			(1 << 11)
+#define CLKEXTFREE		(1 << 16)
 #define INIT_STREAM		(1 << 1)
 #define DP_SELECT		(1 << 21)
 #define DDIR			(1 << 4)
@@ -85,10 +93,12 @@
 #define MSBS			(1 << 5)
 #define BCE			(1 << 1)
 #define FOUR_BIT		(1 << 1)
+#define IWE			(1 << 24)
 #define DW8			(1 << 5)
 #define CC			0x1
 #define TC			0x02
 #define OD			0x1
+#define CIRQ			(1 << 8)
 #define ERR			(1 << 15)
 #define CMD_TIMEOUT		(1 << 16)
 #define DATA_TIMEOUT		(1 << 20)
@@ -182,6 +192,7 @@ struct omap_hsmmc_host {
 	int			reqs_blocked;
 	int			use_reg;
 	int			req_in_progress;
+	int			sdio_int;
 
 	struct	omap_mmc_platform_data	*pdata;
 };
@@ -531,8 +542,11 @@ static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
 		irq_mask = INT_EN_MASK;
 
 	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
-	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
-	OMAP_HSMMC_WRITE(host->base, IE, irq_mask);
+	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask | CIRQ);
+	if (host->sdio_int)
+		OMAP_HSMMC_WRITE(host->base, IE, irq_mask | CIRQ);
+	else 
+		OMAP_HSMMC_WRITE(host->base, IE, irq_mask);
 }
 
 static void omap_hsmmc_disable_irq(struct omap_hsmmc_host *host)
@@ -582,7 +596,7 @@ static int omap_hsmmc_context_restore(struct omap_hsmmc_host *host)
 		;
 
 	OMAP_HSMMC_WRITE(host->base, SYSCONFIG,
-			OMAP_HSMMC_READ(host->base, SYSCONFIG) | AUTOIDLE);
+			OMAP_HSMMC_READ(host->base, SYSCONFIG) | AUTOIDLE | ENAWAKEUP);
 
 	if (host->id == OMAP_MMC1_DEVID) {
 		if (host->power_mode != MMC_POWER_OFF &&
@@ -597,7 +611,7 @@ static int omap_hsmmc_context_restore(struct omap_hsmmc_host *host)
 	}
 
 	OMAP_HSMMC_WRITE(host->base, HCTL,
-			OMAP_HSMMC_READ(host->base, HCTL) | hctl);
+			OMAP_HSMMC_READ(host->base, HCTL) | hctl | IWE);
 
 	OMAP_HSMMC_WRITE(host->base, CAPA,
 			OMAP_HSMMC_READ(host->base, CAPA) | capa);
@@ -610,7 +624,11 @@ static int omap_hsmmc_context_restore(struct omap_hsmmc_host *host)
 		&& time_before(jiffies, timeout))
 		;
 
-	omap_hsmmc_disable_irq(host);
+	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+	OMAP_HSMMC_WRITE(host->base, ISE, INT_EN_MASK | CIRQ);
+ 	OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);
+
+	//omap_hsmmc_disable_irq(host);
 
 	/* Do not initialize card-specific things if the power is off */
 	if (host->power_mode == MMC_POWER_OFF)
@@ -714,9 +732,9 @@ static void send_init_stream(struct omap_hsmmc_host *host)
 
 	disable_irq(host->irq);
 
-	OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);
+	//OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);
 	OMAP_HSMMC_WRITE(host->base, CON,
-		OMAP_HSMMC_READ(host->base, CON) | INIT_STREAM);
+		OMAP_HSMMC_READ(host->base, CON) | INIT_STREAM | CTPL);
 	OMAP_HSMMC_WRITE(host->base, CMD, INIT_STREAM_CMD);
 
 	timeout = jiffies + msecs_to_jiffies(MMC_TIMEOUT_MS);
@@ -838,7 +856,7 @@ static void omap_hsmmc_request_done(struct omap_hsmmc_host *host, struct mmc_req
 	dma_ch = host->dma_ch;
 	spin_unlock(&host->irq_lock);
 
-	omap_hsmmc_disable_irq(host);
+	//omap_hsmmc_disable_irq(host);
 	/* Do not complete the request if DMA is still in progress */
 	if (mrq->data && host->use_dma && dma_ch != -1)
 		return;
@@ -998,14 +1016,19 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
 {
 	struct mmc_data *data;
 	int end_cmd = 0, end_trans = 0;
+	bool card_irq = false;
 
+
+	if (status & CIRQ) {
+		card_irq = true;
+	}
 	if (!host->req_in_progress) {
 		do {
 			OMAP_HSMMC_WRITE(host->base, STAT, status);
 			/* Flush posted write */
 			status = OMAP_HSMMC_READ(host->base, STAT);
 		} while (status & INT_EN_MASK);
-		return;
+		goto out;
 	}
 
 	data = host->data;
@@ -1066,6 +1089,11 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
 		omap_hsmmc_cmd_done(host, host->cmd);
 	if ((end_trans || (status & TC)) && host->mrq)
 		omap_hsmmc_xfer_done(host, data);
+out:
+	if (card_irq)
+		mmc_signal_sdio_irq(host->mmc);
+
+	return;
 }
 
 /*
@@ -1075,6 +1103,11 @@ static irqreturn_t omap_hsmmc_irq(int irq, void *dev_id)
 {
 	struct omap_hsmmc_host *host = dev_id;
 	int status;
+
+	if (!host->fclk->usecount) {
+		printk(KERN_INFO "%s: fclk usecount is 0.. \n", __FUNCTION__);
+		clk_enable(host->fclk);
+	}
 
 	status = OMAP_HSMMC_READ(host->base, STAT);
 	do {
@@ -1610,6 +1643,39 @@ static int omap_hsmmc_get_ro(struct mmc_host *mmc)
 	return mmc_slot(host).get_ro(host->dev, 0);
 }
 
+static void omap_hsmmc_enable_sdio_irq(struct mmc_host *mmc, int enable)
+{
+	struct omap_hsmmc_host *host = mmc_priv(mmc);
+	u32 ie, con;
+	unsigned long flags;
+
+	spin_lock_irqsave(&host->irq_lock, flags);
+
+	//printk(KERN_INFO "%s: Enabling SDIO IRQ...\n", __FUNCTION__);
+	host->sdio_int = enable;
+
+	if (!host->fclk->usecount)
+		clk_enable(host->fclk);
+	
+	con = OMAP_HSMMC_READ(host->base, CON);
+	ie = OMAP_HSMMC_READ(host->base, IE);
+	if (enable) {
+		ie |= CIRQ_ENABLE;
+		con |= CTPL;
+	} else {
+		ie &= ~CIRQ_ENABLE;
+		con &= ~CTPL;
+	}
+	OMAP_HSMMC_WRITE(host->base, CON, con);
+	OMAP_HSMMC_WRITE(host->base, IE, ie);
+	OMAP_HSMMC_READ(host->base, IE); /* flush posted write */
+
+	//if (!enable)
+	//	clk_disable(host->fclk);
+
+	spin_unlock_irqrestore(&host->irq_lock, flags);
+}
+
 static void omap_hsmmc_conf_bus_power(struct omap_hsmmc_host *host)
 {
 	u32 hctl, capa, value;
@@ -1624,14 +1690,14 @@ static void omap_hsmmc_conf_bus_power(struct omap_hsmmc_host *host)
 	}
 
 	value = OMAP_HSMMC_READ(host->base, HCTL) & ~SDVS_MASK;
-	OMAP_HSMMC_WRITE(host->base, HCTL, value | hctl);
+	OMAP_HSMMC_WRITE(host->base, HCTL, value | hctl | IWE);
 
 	value = OMAP_HSMMC_READ(host->base, CAPA);
 	OMAP_HSMMC_WRITE(host->base, CAPA, value | capa);
 
 	/* Set the controller to AUTO IDLE mode */
 	value = OMAP_HSMMC_READ(host->base, SYSCONFIG);
-	OMAP_HSMMC_WRITE(host->base, SYSCONFIG, value | AUTOIDLE);
+	OMAP_HSMMC_WRITE(host->base, SYSCONFIG, value | AUTOIDLE | ENAWAKEUP);
 
 	/* Set SD bus power bit */
 	set_sd_bus_power(host);
@@ -1881,7 +1947,7 @@ static const struct mmc_host_ops omap_hsmmc_ops = {
 	.set_ios = omap_hsmmc_set_ios,
 	.get_cd = omap_hsmmc_get_cd,
 	.get_ro = omap_hsmmc_get_ro,
-	/* NYET -- enable_sdio_irq */
+	.enable_sdio_irq = omap_hsmmc_enable_sdio_irq,
 };
 
 static const struct mmc_host_ops omap_hsmmc_ps_ops = {
@@ -1891,7 +1957,7 @@ static const struct mmc_host_ops omap_hsmmc_ps_ops = {
 	.set_ios = omap_hsmmc_set_ios,
 	.get_cd = omap_hsmmc_get_cd,
 	.get_ro = omap_hsmmc_get_ro,
-	/* NYET -- enable_sdio_irq */
+	.enable_sdio_irq = omap_hsmmc_enable_sdio_irq,
 };
 
 #ifdef CONFIG_DEBUG_FS
@@ -2023,6 +2089,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
 	host->mapbase	= res->start;
 	host->base	= ioremap(host->mapbase, SZ_4K);
 	host->power_mode = MMC_POWER_OFF;
+	host->sdio_int	= 0;
 
 	platform_set_drvdata(pdev, host);
 	INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
@@ -2106,7 +2173,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
 	mmc->max_seg_size = mmc->max_req_size;
 
 	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
-		     MMC_CAP_WAIT_WHILE_BUSY;
+		     MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_SDIO_IRQ;
 
 	switch (mmc_slot(host).wires) {
 	case 8:
@@ -2199,7 +2266,9 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
 		pdata->resume = omap_hsmmc_resume_cdirq;
 	}
 
-	omap_hsmmc_disable_irq(host);
+	//omap_hsmmc_disable_irq(host);
+	OMAP_HSMMC_WRITE(host->base, ISE, INT_EN_MASK | CIRQ); //CIRQ
+	OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);
 
 	mmc_host_lazy_disable(host->mmc);
 
