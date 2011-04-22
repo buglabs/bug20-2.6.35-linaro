@@ -1789,14 +1789,13 @@ void SetSGXDispatchTableEntry(void)
 			      SGXRegisterHWTransferContextBW);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_UNREGISTER_HW_TRANSFER_CONTEXT,
 			      SGXUnregisterHWTransferContextBW);
+	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_SCHEDULE_PROCESS_QUEUES,
+			      SGXScheduleProcessQueuesBW);
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_READ_DIFF_COUNTERS,
 			      SGXReadDiffCountersBW);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_READ_HWPERF_CB,
 			      SGXReadHWPerfCBBW);
-
-	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_SCHEDULE_PROCESS_QUEUES,
-			      SGXScheduleProcessQueuesBW);
 
 #if defined(PDUMP)
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_PDUMP_BUFFER_ARRAY,

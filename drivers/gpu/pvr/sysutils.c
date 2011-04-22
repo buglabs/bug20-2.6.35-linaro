@@ -547,11 +547,14 @@ static enum PVRSRV_ERROR InitDebugClocks(struct SYS_DATA *psSysData)
 	sys_ck = clk_get(NULL, "sys_ck");
 	if (IS_ERR(sys_ck))
 		goto err3;
-	if (clk_get_parent(psSysSpecData->psGPT11_FCK) != sys_ck)
+	if (clk_get_parent(psSysSpecData->psGPT11_FCK) != sys_ck) {
+		clk_disable(psSysSpecData->psGPT11_FCK);
 		if (clk_set_parent(psSysSpecData->psGPT11_FCK, sys_ck) < 0) {
 			clk_put(sys_ck);
 			goto err3;
 		}
+		clk_enable(psSysSpecData->psGPT11_FCK);
+	}
 	clk_put(sys_ck);
 
 	PVR_TRACE("GPTIMER11 clock is %dMHz",
