@@ -4,7 +4,7 @@
 
 menuconfig BMI
        tristate "BMI"
-       depends on I2C && BUG_DOCK
+       depends on I2C
        default n
        ---help---
          BMI bus infrastructure

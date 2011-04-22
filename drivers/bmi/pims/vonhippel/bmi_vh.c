@@ -720,10 +720,6 @@ int bmi_vh_probe(struct bmi_device *bdev)
 
 		//return -EBUSY;
 	}
-
-	// add usb dependency
-	increment_usb_dep();
-
 	return 0;
 
  err1:	
@@ -758,9 +754,6 @@ void bmi_vh_remove(struct bmi_device *bdev)
 	i2c_unregister_device(vh->adc);
 	i2c_unregister_device(vh->dac);
 	spi_unregister_device(vh->spi);
-
-	// remove usb dependency
-	decrement_usb_dep();
 
 	irq = bdev->slot->status_irq;
 	free_irq (irq, vh);

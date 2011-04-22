@@ -175,10 +175,6 @@ int bmi_gsm_probe(struct bmi_device *bdev)
   struct class *bmi_class;
   struct bmi_gsm *gsmod;
 
-  // add usb dependancy
-  increment_usb_dep();
-
-
   slot = bdev->slot->slotnum;
   gsmod = &bmi_gsm_priv[slot];
   gsmod->bdev = 0;
@@ -256,9 +252,6 @@ void bmi_gsm_remove(struct bmi_device *bdev)
   
   //de-attach driver-specific struct from bmi_device structure 
   bmi_device_set_drvdata (bdev, NULL);
-
-  // remove usb dependency
-  decrement_usb_dep();
   
   return;
 }
