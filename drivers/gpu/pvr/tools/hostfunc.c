@@ -30,6 +30,7 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
+#include <linux/slab.h>
 #include <linux/string.h>
 #include <asm/page.h>
 #include <linux/vmalloc.h>
