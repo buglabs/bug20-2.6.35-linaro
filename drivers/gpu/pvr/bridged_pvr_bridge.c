@@ -696,7 +696,7 @@ static int PVRSRVCacheFlushDRIBW(u32 ui32BridgeID,
 	unsigned long start;
 	size_t len;
 	int type;
-	PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_CACHE_FLUSH_DRM);
+	//PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_CACHE_FLUSH_DRM);
 
 	start = psCacheFlushIN->ui32Virt;
 	len = psCacheFlushIN->ui32Length;
@@ -2745,8 +2745,10 @@ enum PVRSRV_ERROR CommonBridgeInit(void)
 			      PVRSRVExportDeviceMemBW);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_RELEASE_MMAP_DATA,
 			      PVRMMapReleaseMMapDataBW);
+	/*
 	SetDispatchTableEntry(PVRSRV_BRIDGE_CACHE_FLUSH_DRM,
 			      PVRSRVCacheFlushDRIBW);
+	*/
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_PROCESS_SIMISR_EVENT, DummyBW);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_REGISTER_SIM_PROCESS, DummyBW);
@@ -3001,9 +3003,11 @@ static int bridged_ioctl(u32 cmd, void *in, void *out,
 	case PVRSRV_BRIDGE_RELEASE_MMAP_DATA:
 		err = PVRMMapReleaseMMapDataBW(cmd, in, out, per_proc);
 		break;
+	/*
 	case PVRSRV_BRIDGE_CACHE_FLUSH_DRM:
 		err = PVRSRVCacheFlushDRIBW(cmd, in, out, per_proc);
 		break;
+	*/
 
 	case PVRSRV_BRIDGE_PROCESS_SIMISR_EVENT:
 	case PVRSRV_BRIDGE_REGISTER_SIM_PROCESS:
@@ -3304,9 +3308,10 @@ int BridgedDispatchKM(struct PVRSRV_PER_PROCESS_DATA *pd,
 	g_BridgeDispatchTable[bid].ui32CallCount++;
 	g_BridgeGlobalStats.ui32IOCTLCount++;
 #endif
-	if (!pd->bInitProcess && bridged_check_cmd(bid))
+	if (!pd->bInitProcess && bridged_check_cmd(bid)) {
+		printk(KERN_INFO "%s: check_cmd failed: 0x%x. \n", __FUNCTION__, bid);
 		goto return_fault;
-
+	}
 	if (SysAcquireData(&psSysData) != PVRSRV_OK)
 		goto return_fault;
 
