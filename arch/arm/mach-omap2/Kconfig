@@ -146,6 +146,7 @@ config MACH_BUG20
         depends on ARCH_OMAP3
 	select HAVE_PWM
 	select OMAP_PACKAGE_CBB
+	select ARCH_WANT_FRAME_POINTERS
 
 config MACH_OMAP3EVM
 	bool "OMAP 3530 EVM board"
