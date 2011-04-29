@@ -433,6 +433,7 @@ static int __devinit tsc2004_probe(struct i2c_client *client,
 	input_dev->name = "TSC2004 Touchscreen";
 	input_dev->phys = ts->phys;
 	input_dev->id.bustype = BUS_I2C;
+	input_dev->dev.parent = &client->dev;
 
 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
