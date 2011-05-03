@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Wed Mar 30 11:47:07 2011
+# Fri Apr 29 16:22:54 2011
 #
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
@@ -969,7 +969,7 @@ CONFIG_SCSI_LOWLEVEL=y
 # CONFIG_ATA is not set
 # CONFIG_MD is not set
 CONFIG_NETDEVICES=y
-CONFIG_DUMMY=y
+# CONFIG_DUMMY is not set
 # CONFIG_BONDING is not set
 # CONFIG_MACVLAN is not set
 # CONFIG_EQUALIZER is not set
