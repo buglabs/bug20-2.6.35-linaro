@@ -183,19 +183,23 @@ static int omapbmi_slot_resume(struct platform_device *pdev)
 
 static int omapbmi_slot_gpio_req(u8 * gpios)
 {
-  int i;
-  int res;
-
+	int i, res;
   
-  for (i = 0; i < 4; i++) {
-    if (gpios[i] < 0)
-      break;
-    res = gpio_request(gpios[i],"bmi_gpio");
-    if (res) {
-      printk(KERN_ERR "slots_bug: GPIO %d request failed...\n", gpios[i]);
-    }
-  }
-  return 0;
+	for (i = 0; i < 4; i++) {
+		if (gpios[i] < 0)
+			break;
+		res = gpio_request(gpios[i], "bmi_gpio");
+		if (res) {
+			printk(KERN_ERR "slots_bug: GPIO %d request err %d\n",
+			gpios[i], res);
+		} else {
+			res =  gpio_direction_output(gpios[i], 0);
+			if (res)
+				printk(KERN_ERR "slots_bug: GPIO %d set 0 failed %d\n",
+				gpios[i], res);
+		}
+	}
+	return 0;
 }
 
 void omapbmi_slot_gpio_free(char* gpios)
