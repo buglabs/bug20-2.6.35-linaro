@@ -769,7 +769,7 @@ static struct twl4030_power_data bugbase_scripts_data __initdata = {
 };
 
 static int bugbase_keymap[] = {
-	KEY(0, 0, KEY_ENTER),
+	KEY(0, 0, KEY_VIDEO_PREV),
 };
 
 static struct matrix_keymap_data bugbase_keymap_data = {
