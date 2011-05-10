@@ -43,6 +43,7 @@ config BMI_LCD
 config BMI_VIDEO
 	tristate "BMI Video Module support"
 	depends on BMI_PIMS && TFP410 && THS8200
+        depends on GPIO_PCA953X && (FIRMWARE_EDID = y)
 	default n
 	---help---
 	  This is the BMI driver for the Video Plug-In Module (DVI/VGA).

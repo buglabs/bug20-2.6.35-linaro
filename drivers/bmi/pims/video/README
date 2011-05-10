@@ -1,0 +1,46 @@
+Bug Video Module (aka bmi_video)
+
+Bug Module Supported: BugVideo 2.0 Hardware Module
+Bug Base Supported: BugBase 2.0a (aka BugBase YT)
+Kernel Supported:  Linux Kernel 2.6.35
+
+
+Overview:
+This folder contains kernel module code (bmi_video_core) that runs to load 
+VGA/DVI monitor support into the kernel. This allows the BugVideo module to 
+output video when it is plugged in.
+
+This code relies on the general bmi plug/unplug support, as well as several
+framebuffer and omap2 specific video drivers.
+
+Behavior:
+This kernel module is loaded on boot if a module is detected, or manually loaded and 
+unloaded by a user. When loaded, it registers with the BMI plug-in system, but does not 
+enable any features. When a BugVideo module is plugged in bmi_video_probe is called, and
+video is enabld. When the module is unplugged bmi_video_remove is called, and video 
+is disabled.
+
+Userspace Interface:
+This module can be accessed via sysfs in /sys/bus/bmi/devices/<DEVICE_ID>. It provides
+one read/write file 'vmode'. Reading from vmode displays a list of what mode the module
+has, with the current mode in brackets. For example ' OFF [VGA] DVI AUTO' indicates the
+driver is in VGA mode. OFF indicates no video mode is enabled, or that there is an error.
+AUTO is a temporary state that auto-changes to VGA/DVI/OFF based on monitor sensing.
+
+Writing 'auto','off','vga', or 'dva' to the vmode file will change video modes. Off disables video, Auto will run auto-detect and pick the best mode to use (DVI if both DVI and VGA are connected), or change to off if no monitor is detected. 
+
+Phyiscal Interface:
+BugVideo has a single two-color LED on it. The three LED states are:
+OFF: BugVideo detected a Monitor, did setup, and the monitor should be running OK
+
+RED: BugVideo has a problem, either during boot or during chaning modes. Look at the logs
+
+GREEN: BugVideo is up and running, but has detected no monitors attached. Attach a monitor
+ 	and send 'auto' to the vmode file in sysfs to auto-detect a monitor.
+
+===
+More Reading
+===
+More info at: 
+http://processors.wiki.ti.com/index.php/DSS4_SYSFS_Examples
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/arm/OMAP/DSS

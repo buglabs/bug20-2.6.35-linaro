@@ -1,0 +1,58 @@
+This is a manual test script for people to use in testing the BugVideo module
+
+Requires
+* BugBase Y.T. 2.0
+* BugVideo 2.0
+* VGA and DVI/VGA monitors and cables.
+* Host computer
+* tool for searching logs/data (nano/vim/sed)
+
+Prep:
+0) Reflash a BugBase YT 2.0 (BB) with kernel 3.6.35 or newer.  <See grund if you do ot know how to do this yourself)
+
+Test A, no monitor boot:
+1) Unplug all monitors from the BugVideo (BV), and prep it to boot.  Connect a stinger, and open a console connection from a host to to the BB.  Test monitors with another known good computer to verify all cables and monitors are good.
+
+2) Plug the BV into the BB.  Power on the BB, and watch the video module while it boots. Also check that boot information is scrolling by on the console
+
+3) The BB should boot OK. There should be no errors. When the BB reaches the point where a log-in prompt is shown on the console, you should see a green LED lit up in the corner of the BV.
+
+Test B, DVI Monitor boot:
+4) Plug a DVI monitor into the BV, and reboot the BB using the button on the bottom of the stinger. Watch the video module while it boots. Also check that boot information is scrolling by on the console
+
+3) The BB should boot OK. There should be no errors. When the BB reaches the point where a log-in prompt is shown on the console, you should see video output (it may be black on black while booting) on the monitor. 
+On Error: There will be no video, AND/OR there will be a red LED on the video module.
+
+Test C VGA Monitor Boot
+4) Plug a VGA monitor into the BV, and reboot the BB using the button on the bottom of the stinger. Watch the video module while it boots. Also check that boot information is scrolling by on the console
+
+3) The BB should boot OK. There should be no errors. When the BB reaches the point where a log-in prompt is shown on the console, you should see video output (it may be black on black while booting) on the monitor. 
+On Error: There will be no video, AND/OR there will be a red LED on the video module.
+
+Test D: VGA/DVI double plug Boot:
+4) Plug a VGA and a DVI monitor into the BV, and reboot the BB using the button on the bottom of the stinger. Watch the video module while it boots. Also check that boot information is scrolling by on the console
+
+3) The BB should boot OK. There should be no errors. When the BB reaches the point where a log-in prompt is shown on the console, you should see video output (it may be black on black while booting) on the DVI monitor ONLY. The VGA monitor will be off. 
+On Error: There will be no video, AND/OR there will be a red LED on the video module.
+
+Test E: Select VGA monitor while running.
+After the previous test, leave both mointors plugged in, and BV running.
+to change to VGA mode, at the bug console, run 'echo vga > /sys/bus/bmi/devices/bmi-device-1/vmode'.  The video should change to using the vga monitor
+
+Test F: Select DVI monitor while running.
+After the previous test, leave both mointors plugged in, and BV running.
+to change to DVI mode, at the bug console, run 'echo dvi > /sys/bus/bmi/devices/bmi-device-1/vmode'.  The video should change to using the DVI monitor
+
+
+Test F: Auto select monitor while running.
+After the previous test, leave both mointors plugged in, and BV running.
+To autoselect a monitor, at the bug console, run 'echo auto > /sys/bus/bmi/devices/bmi-device-1/vmode'.  The video should change to use the best available monitor, in this case it will change video to run on the DVI monitor.
+
+
+
+
+= BAD MODULE TEST = 
+
+TODO: make clearer: Find a BugVideo 1.0 module, and plug it in. Make sure the errors or debug statement is clear
+why it does not work.
+
