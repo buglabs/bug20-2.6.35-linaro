@@ -1236,6 +1236,36 @@ qualifier:
 }
 
 /**
+ * snprintfcat - Formats and appends a string to a passed buffer.
+ * @buf: The buffer to place the result into
+ * @size: The size of the buffer, including the trailing null space
+ * @fmt: The format string to use
+ * @args: Arguments for the format string
+ *
+ * see vsnprintf for supported C conventions
+ *
+ * The return value is the number of characters in the entire buffer
+ * excluding the trailing '\0' (per ISO C99). If the filled buffer size
+ * is greater than or equal to @size, the resulting
+ * string is truncated.
+ */
+int  snprintfcat(char *buf, size_t size,
+    char const *fmt, ...)
+{
+    size_t result;
+    va_list args;
+    size_t len = strnlen(buf, size);
+
+	if (len >= size)
+		return len; /* no string added, buffer full */
+
+    va_start(args, fmt);
+    result = vsnprintf(buf + len, size - len, fmt, args);
+    va_end(args);
+    return result + len;
+}
+
+/**
  * vsnprintf - Format a string and place it in a buffer
  * @buf: The buffer to place the result into
  * @size: The size of the buffer, including the trailing null space
