@@ -1,6 +1,8 @@
 /*
  * 	tfp410.c
- *
+ * This file contains basic controller and init functions for
+ * controlling a Digital Video output device, as setup by Bug Labs for
+ * our Bug Video module.
  */
 
 /*
@@ -23,6 +25,11 @@
 #include <linux/i2c.h>
 #include "tfp410.h"
 
+/* TRICKY: this is a legacy hack for enable/disable of VGA chip
+ * FUTURE: remove this, and do a 'vga chip reset' via ths8200_reset
+ */
+#define VGA_RESET_GPIO (10) /*raw GPIO line for VGA reset */
+
 static int tfp410_write (struct i2c_client *client, unsigned char offset, unsigned char data)
 {
     int err = 0;
@@ -42,13 +49,13 @@ int tfp410_enable(struct i2c_client *client)
 {
     int err = 0;
 
-    //bring reset line low
+/*    //bring reset line low
     gpio_direction_output(10, 0);
     gpio_set_value (10, 1);
     mdelay (1);
     gpio_set_value (10, 0);
     mdelay (1);
-
+*/
     //exit PD mode
     err |= tfp410_write(client, 0x08, 0xbd);
     mdelay (1);
@@ -65,13 +72,13 @@ int tfp410_disable(struct i2c_client *client)
 {
     int err;
 
-    //issue reset
+ /*   //issue reset
     gpio_direction_output(10, 0);
     gpio_set_value (10, 1);
     mdelay (1);
     gpio_set_value (10, 0);
     mdelay (1);
-
+*/
     //attempt graceful powerdown
     err = tfp410_write(client, 0x08, 0xbc);
     if (err < 0) {
@@ -80,9 +87,10 @@ int tfp410_disable(struct i2c_client *client)
     }
     mdelay(1);    
 
-    //hold reset line high
-    gpio_direction_output(10, 0);
-    gpio_set_value (10, 1);
+    /*hold reset line high*/
+	/* TODO: move out of here. Wrong place for it, this is ths8200 'stop'*/
+    gpio_direction_output(VGA_RESET_GPIO, 0);
+    gpio_set_value(VGA_RESET_GPIO, 1);
     mdelay(1);    
 
     return 0;
@@ -95,10 +103,10 @@ int tfp410_init(struct i2c_client *client)
     int err = 0;
 
     //issue reset
-    gpio_direction_output(10, 0);
-    gpio_set_value (10, 1);
+    gpio_direction_output(VGA_RESET_GPIO, 0);
+    gpio_set_value(VGA_RESET_GPIO, 1);
     mdelay (1);
-    gpio_set_value (10, 0);
+    gpio_set_value(VGA_RESET_GPIO, 0);
     mdelay (1);
 
     //init tfp
