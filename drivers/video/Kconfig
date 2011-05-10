@@ -66,6 +66,7 @@ menuconfig FB
 config FIRMWARE_EDID
        bool "Enable firmware EDID"
        depends on FB
+       select FB_DDC
        default n
        ---help---
          This enables access to the EDID transferred from the firmware.

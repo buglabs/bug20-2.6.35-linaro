@@ -952,6 +952,8 @@ void fb_delete_videomode(const struct fb_videomode *mode,
 		}
 	}
 }
+EXPORT_SYMBOL(fb_delete_videomode);
+
 
 /**
  * fb_destroy_modelist - destroy modelist

@@ -909,6 +909,48 @@ int fb_parse_edid(unsigned char *edid, struct fb_var_screeninfo *var)
 	return 1;
 }
 
+
+/* fb_edid_show - prints EDID data summary to a passed buffer
+ *
+ * @spec - a pointer to a filled monspecs structure
+ * @buf  - buffer to fill with data
+ * @bufSize - byte count of entire size of buf
+ * @detail - detail level (0 -5)
+ *
+ * @returns - Returns the total size of the buffer filled,
+ * and buf contains a string summary of the EDID data
+ */
+ssize_t fb_edid_show(struct fb_monspecs *specs, char *buf,
+	ssize_t bufSize,  int detail)
+{
+	snprintfcat(buf, bufSize, "=====\nEDID INFO\n====\n");
+	snprintfcat(buf, bufSize, "   EDID Version %d.%d\n",
+		(int) specs->version, (int) specs->revision);
+	snprintfcat(buf, bufSize, "   Manufacturer: %s\n", specs->manufacturer);
+	snprintfcat(buf, bufSize, "   Model: %x\n", specs->model);
+	snprintfcat(buf, bufSize, "   Serial#: %u\n", specs->serial);
+	snprintfcat(buf, bufSize, "   Year: %u Week %u\n",
+		specs->year, specs->week);
+	if (detail < 1) {
+		printk(KERN_INFO "Only level 1 detail available\n");
+		return strnlen(buf, bufSize);
+	}
+
+	/* FUTURE: add more data based on data level. See parse_vendor_block and
+	fb_edid_to_monspecs for more info that can be added */
+	return strnlen(buf, bufSize);
+
+}
+
+/* fb_edid_to_monspecs - creates a monspecs db from edid data
+ * @edid - EDID data block
+ * @specs - pointer to a fb_monspecs structure
+ *
+ * @returns
+ *  On succeess, specs is updated with a new fb_videomode
+ *  and specs->modedb will need to be free'd by the caller
+ *  on failure? a lot of disappointment. (and no new data)
+ */
 void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 	unsigned char *block;
@@ -1395,6 +1437,7 @@ const unsigned char *fb_firmware_edid(struct device *device)
 EXPORT_SYMBOL(fb_firmware_edid);
 
 EXPORT_SYMBOL(fb_parse_edid);
+EXPORT_SYMBOL(fb_edid_show);
 EXPORT_SYMBOL(fb_edid_to_monspecs);
 EXPORT_SYMBOL(fb_get_mode);
 EXPORT_SYMBOL(fb_validate_mode);

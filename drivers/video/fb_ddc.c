@@ -18,7 +18,7 @@
 
 #define DDC_ADDR	0x50
 
-static unsigned char *fb_do_probe_ddc_edid(struct i2c_adapter *adapter)
+unsigned char *fb_do_probe_ddc_edid(struct i2c_adapter *adapter)
 {
 	unsigned char start = 0x0;
 	unsigned char *buf = kmalloc(EDID_LENGTH, GFP_KERNEL);
@@ -49,6 +49,8 @@ static unsigned char *fb_do_probe_ddc_edid(struct i2c_adapter *adapter)
 	kfree(buf);
 	return NULL;
 }
+EXPORT_SYMBOL(fb_do_probe_ddc_edid);
+
 
 unsigned char *fb_ddc_read(struct i2c_adapter *adapter)
 {
@@ -110,7 +112,6 @@ unsigned char *fb_ddc_read(struct i2c_adapter *adapter)
 	adapter->class |= I2C_CLASS_DDC;
 	return edid;
 }
-
 EXPORT_SYMBOL_GPL(fb_ddc_read);
 
 MODULE_AUTHOR("Dennis Munsie <dmunsie@cecropia.com>");
