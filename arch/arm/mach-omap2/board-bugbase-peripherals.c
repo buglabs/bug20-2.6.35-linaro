@@ -360,9 +360,9 @@ static struct spi_board_info __initdata bug_spi_board_info[] = {
     .bus_num                    = 1,
     .chip_select                = 0,
     .mode                       = SPI_MODE_0,
-    .max_speed_hz               = 2000000,
+    .max_speed_hz               = 15000000,
     .platform_data              = &bugbase_sc_data,
-  },  
+  },
   {
     .modalias			= "spi-lcd",
     .bus_num			= 3,
