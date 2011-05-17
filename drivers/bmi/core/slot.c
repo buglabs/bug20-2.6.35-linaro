@@ -57,7 +57,7 @@ void bmi_slot_power_on (int num)
     printk(KERN_INFO "BMI: Slot %d power is always on...\n", num);
   return;    
 }
-		
+
 void bmi_slot_power_off (int num)
 {
   struct bmi_slot *slot = bmi_get_slot(num);
@@ -301,27 +301,26 @@ static void bmi_slot_work_handler(struct work_struct * work)
   if (bmi_slot_module_present(slot->slotnum)) {
     if (!slot->present) {
       slot->present = 1;
-
       bmi_slot_power_on(slot->slotnum);
 
       slot->eeprom = i2c_new_device(slot->adap, &at24c02_info);
       data = kmalloc(sizeof(struct bmi_eeprom_data), GFP_KERNEL);
       ret = bmi_slot_read_eeprom(slot, (u8*)data);
- 
+
       if (ret < 0)
 	{
 	  printk(KERN_INFO "BMI: EEPROM Trouble on Slot %d...\n",slot->slotnum);
-	  
+
 	  goto del_eeprom;
 	}
       //Testing stuff here...get rid of this...
       else
 	printk(KERN_INFO "BMI: EEPROM Found...\n");
-      cdat = (char*)&data;  
+      cdat = (char*)&data;
       printk(KERN_INFO "SLOTS: Vendor:  0x%x\n",(data->vendor_msb<<8) | (data->vendor_lsb));
       printk(KERN_INFO "SLOTS: Product  0x%x\n",(data->product_msb<<8) | (data->product_lsb));
       printk(KERN_INFO "SLOTS: Revision 0x%x\n",(data->revision_msb<<8) | (data->revision_lsb));
-      
+
       //Do new device allocation and hand it over to BMI...
       bdev = bmi_alloc_dev(slot);
       bdev->vendor = (data->vendor_msb<<8) | (data->vendor_lsb);
@@ -332,14 +331,14 @@ static void bmi_slot_work_handler(struct work_struct * work)
       ret = device_add(&bdev->dev);
       if (ret) {
 	printk(KERN_ERR "SLOTS: Failed to add device...%d\n",ret);
-	goto del_eeprom; //TODO: Memory allocated for by bmi_alloc_dev 
+	goto del_eeprom; //TODO: Memory allocated for by bmi_alloc_dev
       }
       slot->bdev = bdev;
     }
   }
-  else { 
+  else {
     if (slot->present) {
-      slot->present = 0;      
+      slot->present = 0;
       printk(KERN_INFO "BMI: Module removed from slot %d...\n", slot->slotnum);
       if (slot->bdev == NULL) {
 	printk(KERN_ERR "SLOTS: BMI Device NULL...\n");
@@ -361,8 +360,8 @@ static void bmi_slot_work_handler(struct work_struct * work)
   kfree(data);
   slot->bdev = NULL;
   slot->eeprom = NULL;
+  bmi_slot_power_off(slot->slotnum);
   goto irqenbl;
-  
 }
 
 static int bmi_register_slot(struct bmi_slot *slot)
@@ -373,13 +372,14 @@ static int bmi_register_slot(struct bmi_slot *slot)
   //  mutex_init(&slot->state_lock);
   if (unlikely(WARN_ON(!bmi_bus_type.p)))
     return -EAGAIN;
+
+  mutex_lock(&slot_lock);
   if (slot->actions == NULL) {
     printk(KERN_INFO "SLOTS: No Slot actions defined...\n");
     goto unlist;
   }
+
   mutex_init(&slot->pres_mutex);
-  mutex_lock(&slot_lock);
-  
   if (slot->slotdev.parent == NULL) {
     slot->slotdev.parent = &platform_bus;
     //debug message here
@@ -391,7 +391,7 @@ static int bmi_register_slot(struct bmi_slot *slot)
   if (class == NULL) {
     printk(KERN_ERR "BMI Class doesn't exist...\n");
     goto unlist;
-  } 
+  }
   slot->slotdev.class = class;
   res = device_register(&slot->slotdev);
   if (res) {
@@ -424,13 +424,12 @@ int bmi_add_slot(struct bmi_slot *slot)
 {
   int slotnum = 0;
   int res = 0;
-  
+
  retry:
   if (idr_pre_get(&bmi_slot_idr, GFP_KERNEL) == 0)
     return -ENOMEM;
-  
+
   mutex_lock(&slot_lock);
-  
   res = idr_get_new_above(&bmi_slot_idr, slot, 0, &slotnum);
   mutex_unlock(&slot_lock);
   if (res < 0) {
@@ -439,7 +438,10 @@ int bmi_add_slot(struct bmi_slot *slot)
     return res;
   }
   slot->slotnum = slotnum;
-  return bmi_register_slot(slot);
+  res = bmi_register_slot(slot);
+  if (!res)
+    bmi_slot_power_off(slot->slotnum);
+  return res;
 }
 EXPORT_SYMBOL(bmi_add_slot);
 
