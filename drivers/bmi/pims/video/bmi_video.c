@@ -301,7 +301,7 @@ static ssize_t bmi_video_vmode_store(struct device *dev,
 			printk(KERN_ERR "scan_for_monitors DVI err %d",err);
 			return len;
 		}		
-		enable_dvi(video, 1); 
+		enable_dvi(video); 
 	}
 	else if (strstr(buf, "vga") != NULL || strstr(buf, "VGA") != NULL){
 		err = scan_for_monitors(VGA, video);
@@ -309,7 +309,7 @@ static ssize_t bmi_video_vmode_store(struct device *dev,
 			printk(KERN_ERR "scan_for_monitors VGA err %d",err);
 			return len;
 		}		
-		enable_vga(video, 1);
+		enable_vga(video);
 	}
 	else if (strstr(buf, "auto") != NULL || strstr(buf, "AUTO") != NULL){
 
@@ -320,11 +320,11 @@ static ssize_t bmi_video_vmode_store(struct device *dev,
 		}
 		if(video->dvi_monitor_edid) {	
 			//printk(KERN_INFO "dvi monitor detected");
-			enable_dvi(video, 0);
+			enable_dvi(video);
 		}	
 		else if(video->vga_monitor_edid) {	
 			//printk(KERN_INFO "vga monitor detected");
-			enable_vga(video, 0);
+			enable_vga(video);
 		}
 		else {
 			printk(KERN_INFO "no monitor detected");
@@ -601,11 +601,11 @@ int bmi_video_probe(struct bmi_device *bdev)
 	//based on monitor's found, choose the best'
 	if(video->dvi_monitor_edid) {	
 		printk(KERN_INFO "dvi monitor detected");
-		enable_dvi(video,0);
+		enable_dvi(video);
 	}	
 	else if(video->vga_monitor_edid) {	
 		printk(KERN_INFO "vga monitor detected");
-		enable_vga(video,0);
+		enable_vga(video);
 	}
 	else {
 		printk(KERN_ERR "no monitor detected");
@@ -676,7 +676,7 @@ void bmi_video_remove(struct bmi_device *bdev)
 	slot = bdev->slot->slotnum;
 	video = &g_bmi_video;
 
-	//TODO: removals have known unwind errors iff rmmod bmi_video_core while
+	//removals have known unwind errors iff rmmod bmi_video_core while
 	//device is plugged in
 	device_remove_file(&bdev->dev, &dev_attr_vmode);
 	device_remove_file(&bdev->dev, &dev_attr_vga_edid);
@@ -686,8 +686,7 @@ void bmi_video_remove(struct bmi_device *bdev)
 	device_destroy (bmi_class, MKDEV(major, slot));
 
 	// -- disable displays
-	//monitors_off(video); <- hardware might not be there, run save ver
-	monitors_off_safe(video);
+	monitors_off_safe(video);//safe for missing HW
 
 	// -- disable all displays
 	for_each_dss_dev(dssdev) {
@@ -791,7 +790,7 @@ void fb_delete_outranged_videomode(struct list_head *head, int minx,int miny,
 /*
  *	module routines
  */
-static int enable_vga(struct bmi_video *video, int force)
+static int enable_vga(struct bmi_video *video)
 {
 	int err;
 	struct fb_info *info;
@@ -832,7 +831,7 @@ static int enable_vga(struct bmi_video *video, int force)
 	//set omapfb
 	info = registered_fb[0];
 	if(info == NULL)  { 
-		printk(KERN_ERR "no registered_fb[0]");
+		printk(KERN_ERR "no registered_fb[0]. Total video failure expected");
 		return -ENOTTY;
 	}
 	var = info->var;	
@@ -840,8 +839,9 @@ static int enable_vga(struct bmi_video *video, int force)
 	//-- test our monitor generated edid
 	err =  edid_data_to_screen_info(video->vga_monitor_edid, &var);
 	if(err) {
-		printk(KERN_ERR "_data_to_screen_info error %d", err);
-		return err;
+		printk(KERN_ERR "data_to_screen_info error %d", err);
+		err = -ENOTTY;
+		goto cont;
 	}
 
 	// get rid of the old list
@@ -918,7 +918,7 @@ cont:
 
 	// -- Ultimate last-chance fallback case
 	if (err) {
-        printk(KERN_ERR "bmi_video.c: enable_dvi total failure %d",err);
+        printk(KERN_ERR "bmi_video.c: enable_vga total failure %d",err);
 		//TOTAL FAILURE. OMG
 		bmi_video_ledset(VIDEO_LED_RED);
 		return err;
@@ -971,11 +971,6 @@ static void monitors_off(struct bmi_video *video)
 		fb_destroy_modelist(&info->modelist);
 	}
 
-	/* can't trust this value yet. Debug/fix this
-	if(info->monspecs.modedb != NULL) {
-		kfree(info->monspecs.modedb);
-	}*/
-
 	video->vmode = OFF;
 	do_eeprom_swap(OFF, video);
 	bmi_video_ledset(VIDEO_LED_GREEN);
@@ -993,14 +988,11 @@ static void monitors_off_safe(struct bmi_video *video)
 	if(list_empty(&info->modelist) == 0) {
 		fb_destroy_modelist(&info->modelist);
 	}
-	/* can't trust this value yet. Debug and fix TODO
-	if(info->monspecs.modedb != NULL) {
-	kfree(info->monspecs.modedb);
-	}	*/
+
 	video->vmode = OFF;
 }
 
-static int enable_dvi(struct bmi_video *video, int force)
+static int enable_dvi(struct bmi_video *video)
 {
     int err;
 	struct fb_info *info;
@@ -1041,7 +1033,7 @@ static int enable_dvi(struct bmi_video *video, int force)
 	//set omapfb
 	info = registered_fb[0];
 	if(info == NULL)  {
-		printk(KERN_ERR "no registered_fb[0]");
+		printk(KERN_ERR "no registered_fb[0]. Total video failure expected");
 		return -ENOTTY;
 	}
 	var = info->var;
@@ -1049,19 +1041,15 @@ static int enable_dvi(struct bmi_video *video, int force)
 	//-- test our monitor generated edid
 	err =  edid_data_to_screen_info(video->dvi_monitor_edid, &var);
 	if(err) {
-		printk(KERN_ERR "_data_to_screen_info error %d", err);
-		return err;
+		printk(KERN_ERR "data_to_screen_info error %d", err);
+		err = -ENOTTY;
+		goto cont; //error case, use dvi defaults 
 	}
 
 	// get rid of the old list
 	if(list_empty(&info->modelist) == 0) {
 		fb_destroy_modelist(&info->modelist);
 	}
-
-	/* not nulled on boot Causing crashes
-	if(info->monspecs.modedb != NULL) {
-		kfree(info->monspecs.modedb);
-	}*/
 
 	// -- convert the monitor EDID into something usable
 	fb_edid_to_monspecs( video->dvi_monitor_edid, &info->monspecs);
@@ -1125,7 +1113,7 @@ cont:
 	err = fb_set_var(info, &var);
 	// -- Total failure. Ultimate fallback case
 	if (err) {
-		printk(KERN_ERR "bmi_video.c: enable_vga total failure, err%d", err);
+		printk(KERN_ERR "bmi_video.c: enable_dvi total failure %d", err);
 		//TOTAL FAILURE. OMG
 		bmi_video_ledset(VIDEO_LED_RED);
 		return err;

@@ -89,8 +89,8 @@ int pca_test_platform_teardown(struct i2c_client *client, unsigned gpio,
 #endif 
 
 //output enable prototypes
-static int enable_dvi(struct bmi_video *video, int force);
-static int enable_vga(struct bmi_video *video, int force);
+static int enable_dvi(struct bmi_video *video);
+static int enable_vga(struct bmi_video *video);
 
 #ifdef BMI_VIDEO_DEBUG
 static void dbg_export_gpios_to_sysfs(void);
