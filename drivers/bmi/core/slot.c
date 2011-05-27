@@ -360,7 +360,8 @@ static void bmi_slot_work_handler(struct work_struct * work)
   kfree(data);
   slot->bdev = NULL;
   slot->eeprom = NULL;
-  bmi_slot_power_off(slot->slotnum);
+  if (!slot->present)
+  	bmi_slot_power_off(slot->slotnum);
   goto irqenbl;
 }
 
