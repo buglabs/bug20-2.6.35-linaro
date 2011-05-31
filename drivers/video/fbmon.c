@@ -908,7 +908,26 @@ int fb_parse_edid(unsigned char *edid, struct fb_var_screeninfo *var)
 	}
 	return 1;
 }
-
+ssize_t fb_videomode_show(struct fb_videomode* modedb, int modedb_len,
+			int bpp, char* buf, ssize_t bufSize)
+{
+	int i = 0;
+	if(modedb_len <= 0) {
+		snprintfcat(buf,bufSize, "== No Valid Mode Info ==\n");
+		return strnlen(buf, bufSize);
+	}
+	// detail <= 1, print EDID header
+	snprintfcat(buf, bufSize, "=====\nMODE INFO\n====\n");
+	
+	for (i = 0; i < modedb_len; i++) 
+	{
+		struct fb_videomode* mode = &modedb[i];
+    	snprintfcat(buf, bufSize, "Listed mode %s %dx%d-%d@%d\n", 
+			mode->name ? mode->name : "noname",
+			mode->xres, mode->yres, bpp, mode->refresh);
+	}
+	return strnlen(buf, bufSize);
+}
 
 /* fb_edid_show - prints EDID data summary to a passed buffer
  *
@@ -923,6 +942,7 @@ int fb_parse_edid(unsigned char *edid, struct fb_var_screeninfo *var)
 ssize_t fb_edid_show(struct fb_monspecs *specs, char *buf,
 	ssize_t bufSize,  int detail)
 {
+	// detail <= 1, print EDID header
 	snprintfcat(buf, bufSize, "=====\nEDID INFO\n====\n");
 	snprintfcat(buf, bufSize, "   EDID Version %d.%d\n",
 		(int) specs->version, (int) specs->revision);
@@ -931,8 +951,29 @@ ssize_t fb_edid_show(struct fb_monspecs *specs, char *buf,
 	snprintfcat(buf, bufSize, "   Serial#: %u\n", specs->serial);
 	snprintfcat(buf, bufSize, "   Year: %u Week %u\n",
 		specs->year, specs->week);
-	if (detail < 1) {
-		printk(KERN_INFO "Only level 1 detail available\n");
+
+	//display video modes
+	if(detail >= 2){	
+		int bpp = 8; //HACK: hardcoded for testing 
+		fb_videomode_show(specs->modedb, specs->modedb_len,bpp, buf, bufSize);
+	} 
+
+	if (detail >= 3 ) {
+		snprintfcat(buf, bufSize, "== Display Characteristics:\n");
+		if(specs->input == 0)
+			snprintfcat(buf, bufSize, "No display inf in EDID\n");
+		else if( (specs->input & FB_DISP_DDI) == FB_DISP_DDI)
+			snprintfcat(buf, bufSize, "Digital Display Input\n");
+		else if( (specs->input & FB_DISP_ANA_700_300) == FB_DISP_ANA_700_300)
+			snprintfcat(buf, bufSize, "Analog Display Input: 0.7V/0.3V\n");
+		else if( (specs->input & FB_DISP_ANA_714_286) == FB_DISP_ANA_714_286)
+			snprintfcat(buf, bufSize, "Analog Display Input: 0.714V/0.286V\n");
+		else if( (specs->input & FB_DISP_ANA_1000_400) == FB_DISP_ANA_1000_400)
+			snprintfcat(buf, bufSize, "Analog Display Input: 0.1000V/0.400V\n");
+		else if( (specs->input & FB_DISP_ANA_700_000) == FB_DISP_ANA_700_000)
+			snprintfcat(buf, bufSize, "Analog Display Input: 0.7V/0.0V\n");
+		
+		snprintfcat(buf, bufSize, "Sync: Not reported\n");
 		return strnlen(buf, bufSize);
 	}
 

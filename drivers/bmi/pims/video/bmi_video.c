@@ -368,7 +368,7 @@ static ssize_t bmi_video_vga_edid_show(struct device *dev,
 	if(video->vga_monitor_edid) {
 		ssize_t len = 0;
 		fb_edid_to_monspecs( video->vga_monitor_edid, &monspecs);
-		len = fb_edid_show(&monspecs, buf, PAGE_SIZE, 1);
+		len = fb_edid_show(&monspecs, buf, PAGE_SIZE, 5);
 		fb_destroy_modedb(monspecs.modedb);
 		return len; 
 	}
@@ -384,7 +384,7 @@ static ssize_t bmi_video_dvi_edid_show(struct device *dev,
 	if(video->dvi_monitor_edid) {
 		ssize_t len = 0;
 		fb_edid_to_monspecs( video->dvi_monitor_edid, &monspecs);
-		len = fb_edid_show(&monspecs, buf, PAGE_SIZE, 1);
+		len = fb_edid_show(&monspecs, buf, PAGE_SIZE, 5);
 		fb_destroy_modedb(monspecs.modedb);
 		return len; 
 	}
