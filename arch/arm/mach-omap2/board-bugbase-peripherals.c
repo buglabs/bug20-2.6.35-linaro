@@ -108,16 +108,6 @@ static struct resource bug_nand_resource = {
 	.flags		= IORESOURCE_MEM,
 };
 
-static struct platform_device bug_nand_device = {
-	.name		= "omap2-nand",
-	.id		= -1,
-	.dev		= {
-		.platform_data	= &bug_nand_data,
-	},
-	.num_resources	= 1,
-	.resource	= &bug_nand_resource,
-};
-
 static void __init bug_flash_init(void)
 {
 	u8 cs = 0;
@@ -146,7 +136,7 @@ static void __init bug_flash_init(void)
 		bug_nand_data.cs = nandcs;
 
 		printk(KERN_INFO "Registering NAND on CS%d\n", nandcs);
-		if (platform_device_register(&bug_nand_device) < 0)
+		if (gpmc_nand_init(&bug_nand_data) < 0)
 			printk(KERN_ERR "Unable to register NAND device\n");
 	}
 }
@@ -876,7 +866,7 @@ static int __init bugbase_omap_i2c_init(void)
 			ARRAY_SIZE(bug_i2c_boardinfo));
 	omap_register_i2c_bus(2, 100, bug_i2c2_boardinfo,
 			ARRAY_SIZE(bug_i2c2_boardinfo));
-	omap_register_i2c_bus(3, 100, bug_i2c3_boardinfo, 
+	omap_register_i2c_bus(3, 100, bug_i2c3_boardinfo,
 			ARRAY_SIZE(bug_i2c3_boardinfo));
 
 	return 0;
@@ -907,7 +897,7 @@ void __init bugbase_peripherals_init(void)
 	spi_register_board_info(bug_spi_board_info,
 				ARRAY_SIZE(bug_spi_board_info));
 	platform_add_devices(bugbase_peripheral_devices,
-			ARRAY_SIZE(bugbase_peripheral_devices));				
+			ARRAY_SIZE(bugbase_peripheral_devices));
 	bug_flash_init();
 	omap2_hsmmc_init(mmc);
 	omap_init_bmi_slots();
