@@ -110,5 +110,15 @@ config BMI_ACCNT
 
           This driver can also be built as a module.
 
+
+config BMI_BUGDUINO
+        tristate "Bug Arduino BMI Module support"
+        depends on BMI_PIMS
+        default n
+        ---help---
+          BMI Bug Arduino plug-in module
+
+          This driver can also be built as a module.
+
 endmenu
 
