@@ -16,4 +16,4 @@ obj-$(CONFIG_BMI_SENSOR)	+= sensor/
 obj-$(CONFIG_VIDEO_BMI_PROJECTOR)	+= projector/
 obj-$(CONFIG_BMI_ZB)		+= zb/
 obj-$(CONFIG_BMI_ACCNT)		+= accenture/
-
+obj-$(CONFIG_BMI_BUGDUINO)  += bugduino/
