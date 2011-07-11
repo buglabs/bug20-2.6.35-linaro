@@ -59,18 +59,16 @@ static struct bmi_bugduino bmi_bugduino_collection[4];
 static int major;
 
 static struct bmi_device_id duino_table[] = {
-		{
-				.match_flags = BMI_DEVICE_ID_MATCH_VENDOR | BMI_DEVICE_ID_MATCH_PRODUCT,
-				.vendor = BMI_VENDOR_BUG_LABS,
-				.product = BMI_PRODUCT_BUGDUINO,
-				.revision = BMI_ANY,
-		},
-		{
-				.match_flags = BMI_DEVICE_ID_MATCH_VENDOR | BMI_DEVICE_ID_MATCH_PRODUCT,
-				.vendor = BMI_VENDOR_SEED_STUDIO,
-				.product = BMI_PRODUCT_BUGDUINO,
-				.revision = BMI_ANY,
-		},		{ 0,},
+	//TRICKY: this can have a BUG_LABS or A SEED_STUDIO vendor as a valid id, just match device.
+	{
+	.match_flags = BMI_DEVICE_ID_MATCH_VENDOR | BMI_DEVICE_ID_MATCH_PRODUCT, 
+	.vendor   = BMI_VENDOR_BUG_LABS, 
+	//.match_flags = BMI_DEVICE_ID_MATCH_PRODUCT,
+	//.vendor = BMI_VENDOR_BUG_LABS,
+	.product = BMI_PRODUCT_BUGDUINO,
+	.revision = BMI_ANY,
+	},
+	{ 0,},
 };
 
 static struct bmi_driver duino_driver = {
@@ -79,6 +77,8 @@ static struct bmi_driver duino_driver = {
 		.probe = bugduino_probe,
 		.remove = bugduino_remove,
 };
+
+MODULE_DEVICE_TABLE(bmi, duino_table);
 
 static struct file_operations duino_fops = {
 		.owner = THIS_MODULE,
@@ -410,6 +410,7 @@ int bugduino_ioctl( struct inode* inode, struct file* file,
 	switch( command ){
 	case BMI_BUGDUINO_RESET:
 	  {
+		printk( KERN_ERR "bmi_bugduino.c: doing bugduino reset.\n" );
 	    bmi_slot_gpio_set_value( slot, BUGDUINO_GPIO_RESET_PIN, 
 			( ( arg == 0x00 ) ? ( BUGDUINO_RESET_OFF ) : ( BUGDUINO_RESET_ON ) ) );
 	  }

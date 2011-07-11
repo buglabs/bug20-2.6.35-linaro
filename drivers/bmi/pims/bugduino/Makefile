@@ -11,6 +11,7 @@
 # BMI PIMS
 #
 
-obj-$(CONFIG_BMI_BUGDUINO)		+= bmi_bugduino_core.o
-bmi_bugduino_core-objs := bmi_bugduino.o
+obj-$(CONFIG_BMI_BUGDUINO)		+= bmi_bugduino.o
+#bmi_bugduino-objs := bmi_bugduino.o
+
 
