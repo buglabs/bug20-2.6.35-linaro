@@ -59,15 +59,7 @@ static struct bmi_bugduino bmi_bugduino_collection[4];
 static int major;
 
 static struct bmi_device_id duino_table[] = {
-	//HACK: maching SEED_STUDIO vendor is failing, this verbose
-	//workaround works. TODO: cleanup and simplify  
 	{
-	.match_flags = BMI_DEVICE_ID_MATCH_PRODUCT, 
-	.vendor   = BMI_VENDOR_BUG_LABS, //VENDOR_SEED_STUDIO is also valid 
-	.product = BMI_PRODUCT_BUGDUINO,
-	.revision = BMI_ANY,
-	},
-{
 	.match_flags = BMI_DEVICE_ID_MATCH_VENDOR | BMI_DEVICE_ID_MATCH_PRODUCT, 
 	.vendor   = BMI_VENDOR_BUG_LABS, 
 	.product = BMI_PRODUCT_BUGDUINO,
