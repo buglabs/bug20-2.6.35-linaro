@@ -250,7 +250,7 @@ static int ReadByte_IOX (struct i2c_client *client, unsigned char offset, unsign
 	if (ret == 1)
 		ret = i2c_master_recv(client, data, 1);
 	if (ret < 0)
-		printk (KERN_ERR "ReadByte_IOX() - i2c_transfer() failed...%d\n",ret);
+		printk(KERN_ERR "ReadByte_IOX() - i2c_transfer() failed...%d\n",ret);
 	return ret;
 }
 
@@ -265,7 +265,7 @@ static int WriteByte_IOX (struct i2c_client *client, unsigned char offset, unsig
 	ret = i2c_master_send(client, msg, sizeof(msg));
 
 	if (ret < 0)
-		printk (KERN_ERR "WriteByte_IOX() - i2c_transfer() failed...%d\n",ret);
+		printk(KERN_ERR "WriteByte_IOX() - i2c_transfer() failed...%d\n",ret);
 
 	return ret;
 }
@@ -322,7 +322,6 @@ int cntl_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
 		   unsigned long arg)
 {	
 	struct bmi_audio *audio = (struct bmi_audio *) (file->private_data);
-//	struct codec_xfer codec_xfer;
 	unsigned char iox_data;
 	int slot;
 
@@ -385,11 +384,11 @@ int cntl_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
 			{
 			int read_data;
 	
-			if(ReadByte_IOX (audio->iox, IOX_INPUT_REG, &iox_data) < 0)
+			if (ReadByte_IOX (audio->iox, IOX_INPUT_REG, &iox_data) < 0)
 				return -ENODEV;
 			
 			read_data = iox_data | (bmi_slot_gpio_get_all(slot) << 8);
-			if(put_user(read_data, (int __user *) arg))
+			if (put_user(read_data, (int __user *) arg))
 				return -EFAULT;
 			}
 			break;
@@ -409,23 +408,6 @@ int cntl_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
 				printk(KERN_INFO "bmi_audio: slot%d already inactive\n", slot);
 			}
 			break;
-
-// dont think we need this anymore - codec is not local
-#if 0
-
-		case BMI_AUDIO_WCODEC:
-			audio->codec_dev->write(AIC3X_PAGE_SELECT, codec_xfer.page);
-			audio->codec_dev->write(codec_xfer.reg, codec_xfer.data);
-			break;
-
-		case BMI_AUDIO_RCODEC:
-			audio->codec_dev->write(AIC3X_PAGE_SELECT, codec_xfer.page);
-			audio->codec_dev->read(codec_xfer.reg, &codec_xfer.data);
-			if (copy_to_user ((struct codec_xfer *) arg, &codec_xfer,
-					  sizeof(struct codec_xfer)))
-				return -EFAULT;
-			break;
-#endif
 
 /* TODO FIXME suspend/resume snd_dev
 		case BMI_AUDIO_SUSPEND:
@@ -458,7 +440,7 @@ struct file_operations cntl_fops = {
  */
 
 // work handler
-void bmiaudio_input_work (struct work_struct *work)
+void bmi_audio_input_work (struct work_struct *work)
 {
 	struct bmi_audio *audio = container_of(work, struct bmi_audio, work);
 	unsigned char iox_data, changed;
@@ -467,9 +449,9 @@ void bmiaudio_input_work (struct work_struct *work)
 	int slot = audio->bdev->slot->slotnum;
 
 	if (bmi_slot_module_present (slot) == 0) {
-		printk (KERN_INFO 
-			"bmi_audio: bmi_audio_input work called with no bdev active (slot %d)\n", 
-			slot);
+		printk(KERN_INFO 
+                       "bmi_audio: bmi_audio_input work called with no bdev active (slot %d)\n", 
+                       slot);
 		goto out;
 	}
 
@@ -705,7 +687,7 @@ static int bugaudio_aic3x_init(struct snd_soc_pcm_runtime *rtd)
  * from the supplied ata.
  */
 static int bugaudio_hw_params(struct snd_pcm_substream *substream,
-	struct snd_pcm_hw_params *params)
+                              struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
@@ -790,8 +772,8 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	/* Set codec DAI configuration - bus clock slave */
 
 	/* Set codec DAI configuration */
-	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S | \
-				  SND_SOC_DAIFMT_NB_NF | \
+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBS_CFS);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set codec DAI configuration\n");
@@ -799,8 +781,8 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* Set cpu DAI configuration */
-	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S | \
-				  SND_SOC_DAIFMT_NB_NF | \
+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
+				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBS_CFS);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set cpu DAI configuration\n");
@@ -1110,7 +1092,7 @@ static int bmi_audio_probe (struct bmi_device *bdev)
 	activate_slot(bdev);
 	
 	// init workqueue for delayed interrupt processing
-	INIT_WORK(&audio->work, bmiaudio_input_work);
+	INIT_WORK(&audio->work, bmi_audio_input_work);
 
 	// i2c
 	audio->iox = i2c_new_device(bdev->slot->adap, &iox_info);
@@ -1363,7 +1345,8 @@ static int __init bmi_audio_init (void)
 	}
 
 	printk (KERN_INFO "bmi_audio: BMI_AUDIO Driver v%s \n", BMIAUDIO_VERSION);
-	if(fcc_test)
+
+	if (fcc_test)
 		printk (KERN_INFO "bmi_audio: FCC Test mode enabled\n");
 	return 0;
 
@@ -1388,7 +1371,7 @@ static void __exit bmi_audio_exit (void)
 	dev_t dev_id;
 	int i;
 
-	printk (KERN_INFO "BMI Audio driver unloading...\n");
+	printk(KERN_INFO "BMI Audio driver unloading...\n");
 
 	// remove bmi functionality
 	bmi_unregister_driver (&bmi_audio_driver);
@@ -1402,7 +1385,7 @@ static void __exit bmi_audio_exit (void)
 		platform_device_unregister(&fixed_regulator_devices[i]);
 	}
 
-	printk (KERN_INFO "BMI Audio driver unloaded.\n");
+	printk(KERN_INFO "BMI Audio driver unloaded.\n");
 	return;
 }
 
