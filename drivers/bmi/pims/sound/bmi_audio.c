@@ -60,6 +60,7 @@
 
 #include <sound/core.h>
 #include <sound/pcm.h>
+#include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 
@@ -679,7 +680,7 @@ static int bugaudio_aic3x_init(struct snd_soc_pcm_runtime *rtd)
 
         snd_soc_dapm_enable_pin(codec, "LLOUT");
         snd_soc_dapm_enable_pin(codec, "RLOUT");
-        snd_soc_dapm_enable_pin(codec, "MONO_LOUT");
+        snd_soc_dapm_disable_pin(codec, "MONO_LOUT");
         snd_soc_dapm_enable_pin(codec, "HPLOUT");
         snd_soc_dapm_enable_pin(codec, "HPROUT");
         snd_soc_dapm_enable_pin(codec, "HPLCOM");
@@ -702,8 +703,6 @@ static int bugaudio_aic3x_init(struct snd_soc_pcm_runtime *rtd)
  *
  * Update the codec data routing and configuration settings
  * from the supplied ata.
- * TODO FIXME: look at Documentation/sound/alsa/soc/clocking.txt to see
- *  if I'm doing clocks correctly
  */
 static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
@@ -711,13 +710,62 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+        unsigned int div;
 	int ret;
 
-	/* Set codec DAI configuration - bus clock slave */
+        /**
+         * The Codec is clocked by the McBSP clock, and the McBSP is
+         * unable to pad the data words.  McBSP requests frame data at
+         * the beginning of the frame and not at the beginning of each
+         * of the data phases.  That means that the McBSP bit clock
+         * must be set to match the effective bit clock required by
+         * the configured sample rate (i.e. at 44.1 khz with 16 bit
+         * sample data per channel, the bit clock must be 44100 * 32 =
+         * 1411200 Hz).
+         *
+         * The DMA transfer mode dictates that both the left and the
+         * right channel are sent without any pauses between them.
+         * The Codec, in contrast, reads sample data both at the
+         * rising and the falling edge, ignoring any bits sent after
+         * the configured sample width.
+         *
+         * Due to hardware restrictions which inhibits the use of the
+         * Codec clock to drive the McBSP, it is clocked from
+         * CORE_48M_FCLK (48 Mhz).  This results in errors in the
+         * resulting sample rate.  For 16 bit sample width, the errors
+         * for popular sample rates are as follows:
+         *
+         * Sample Rate  Error
+         * 96000        4,00%
+         * 48000        0,80%
+         * 44100        0,04%
+         * 32000        1,87%
+         * 22050        0,04%
+         * 16000        0,80%
+         * 11025        0,04%
+         *  8000        0,27%
+         *
+         * (For the curious: The McBSP clock lines run through a
+         * unidirectional buffer before going to the BMI socket in the
+         * BUGbase).
+         */
 
-	/* Set codec DAI configuration */
-	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S | \
-				  SND_SOC_DAIFMT_NB_NF | \
+        div = 48000000 / (params_rate(params) * 32);
+
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+		break;
+	case SNDRV_PCM_FORMAT_S32_LE:
+                div /= 2;
+		break;
+	default:
+                printk(KERN_ERR "Unsupported sample format %d\n", params_format(params));
+		return -EINVAL;
+	}
+
+	/* Set codec DAI configuration - bus clock slave */
+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBS_CFS);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set codec DAI configuration\n");
@@ -734,15 +782,16 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* Set the codec system clock for DAC and ADC */
+        /* The BUGaudio module has a 12 Mhz crystal */
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0, 12000000, SND_SOC_CLOCK_IN);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set codec sysclk\n");
 		return ret;
 	}
 
-	/* Set the McBSP clock source and freq */
+	/* Set the McBSP clock source and freq - McBSP is clocked from CORE_48M_FCLK */
 	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_SYSCLK_CLKS_FCLK,
-				     96000000,
+				     48000000,
 				     SND_SOC_CLOCK_IN);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set cpu sysclk\n");
@@ -750,7 +799,7 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* Set the McBSP clock divisor */
-	ret = snd_soc_dai_set_clkdiv(cpu_dai, OMAP_MCBSP_CLKGDV, 8);
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, OMAP_MCBSP_CLKGDV, div);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set cpu sysclk\n");
 		return ret;
