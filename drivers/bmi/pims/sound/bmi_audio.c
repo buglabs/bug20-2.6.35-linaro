@@ -732,7 +732,7 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
          * BUGbase).
          */
 
-        div = 48000000 / (params_rate(params) * 32);
+        div = 96000000 / (params_rate(params) * 32);
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
@@ -744,6 +744,15 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
                 printk(KERN_ERR "Unsupported sample format %d\n", params_format(params));
 		return -EINVAL;
 	}
+
+        if (div > 256) {
+                /* maximum permitted clock divisor is 256, as
+                 * snd_soc_dai_set_clkdiv subtracts one from the value
+                 * and the divisor field is 8 bits wide.
+                 */
+                printk(KERN_ERR "Unsupported sample rate %d Hz (too low)\n", params_rate(params));
+                return -EINVAL;
+        }
 
 	/* Set codec DAI configuration - bus clock slave */
 	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
@@ -771,9 +780,9 @@ static int bugaudio_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
-	/* Set the McBSP clock source and freq - McBSP is clocked from CORE_48M_FCLK */
+	/* Set the McBSP clock source and freq - McBSP is clocked from CORE_96M_FCLK */
 	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_SYSCLK_CLKS_FCLK,
-				     48000000,
+				     96000000,
 				     SND_SOC_CLOCK_IN);
 	if (ret < 0) {
 		printk(KERN_ERR "Can't set cpu sysclk\n");
