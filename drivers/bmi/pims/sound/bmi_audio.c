@@ -444,7 +444,6 @@ void bmi_audio_input_work (struct work_struct *work)
 {
 	struct bmi_audio *audio = container_of(work, struct bmi_audio, work);
 	unsigned char iox_data, changed;
-	int input_data;
 	int irq = audio->bdev->slot->status_irq;
 	int slot = audio->bdev->slot->slotnum;
 
@@ -460,38 +459,35 @@ void bmi_audio_input_work (struct work_struct *work)
 		printk(KERN_ERR "Error reading iox\n");
 		goto out;
 	}
+#ifdef INPUT
 	iox_data &= IOX_INPUT_MASK;
 	changed = iox_data ^ audio->iox_data;
-// TODO: add 'released' and 'removed' events and set appropriately
-//printk("%s: iox=0x%02x changed=0x%02x\n", __func__, iox_data, changed);
-	input_data = 0;
-	if (changed & GETSTAT_VOLP) {
-//printk("vol up %s\n", (iox_data & GETSTAT_VOLP)?"released":"pressed");
-		input_data |= VOLUME_UP;
-	}
-	if (changed & GETSTAT_VOLD) {
-//printk("vol down %s\n", (iox_data & GETSTAT_VOLD)?"released":"pressed");
-		input_data |= VOLUME_DOWN;
-	}
-	if (changed & GETSTAT_LI_INS) {
-//printk("LI %s\n", (iox_data & GETSTAT_LI_INS)?"inserted":"removed");
-		input_data |= LINEIN_INSERTED;
-	}
-	if (changed & GETSTAT_MIC_INS) {
-//printk("MIC %s\n", (iox_data & GETSTAT_MIC_INS)?"inserted":"removed");
-		input_data |= MICROPHONE_INSERTED;
-	}
-	if (changed & GETSTAT_LO_INS) {
-//printk("LO %s\n", (iox_data & GETSTAT_LO_INS)?"inserted":"removed");
-		input_data |= LINEOUT_INSERTED;
-	}
-	if (changed & GETSTAT_HP_INS) {
-//printk("HP %s\n", (iox_data & GETSTAT_HP_INS)?"inserted":"removed");
-		input_data |= HEADPHONE_INSERTED;
-	}
-#ifdef INPUT
-	input_report_abs (audio->input_dev, ABS_MISC, input_data);
-	input_sync (audio->input_dev);
+        if (!changed)
+                goto out;
+
+        /* Create individual events for those keys/jacks that have
+         * changed
+         */
+	if (changed & GETSTAT_VOLP)
+                input_report_key(audio->input_dev, KEY_VOLUMEUP,
+                                 !(iox_data & GETSTAT_VOLP));
+	if (changed & GETSTAT_VOLD)
+                input_report_key(audio->input_dev, KEY_VOLUMEDOWN,
+                                 !(iox_data & GETSTAT_VOLD));
+	if (changed & GETSTAT_LI_INS)
+                input_report_switch(audio->input_dev, SW_JACK_PHYSICAL_INSERT,
+                                    iox_data & GETSTAT_LI_INS);
+	if (changed & GETSTAT_MIC_INS)
+                input_report_switch(audio->input_dev, SW_MICROPHONE_INSERT,
+                                    !(iox_data & GETSTAT_MIC_INS));
+	if (changed & GETSTAT_LO_INS)
+                input_report_switch(audio->input_dev, SW_LINEOUT_INSERT,
+                                    iox_data & GETSTAT_LO_INS);
+	if (changed & GETSTAT_HP_INS)
+                input_report_switch(audio->input_dev, SW_HEADPHONE_INSERT,
+                                    iox_data & GETSTAT_HP_INS);
+
+	input_sync(audio->input_dev);
 #endif
 	audio->iox_data = iox_data;
 
@@ -1117,12 +1113,20 @@ static int bmi_audio_probe (struct bmi_device *bdev)
 	// set up input device
 	audio->input_dev->name = audio->inp_name;
 	audio->input_dev->phys = audio->inp_name;
-/* FIXME - bustype needed for input dev?
-	audio->input_dev->id.bustype = BUS_BMI;
-*/
+
 	platform_set_drvdata(audio->input_dev, &bmi_audio[slot]);
-	audio->input_dev->evbit[BIT_WORD(EV_ABS)] |= BIT_MASK(EV_ABS);
-	audio->input_dev->absbit[BIT_WORD(ABS_MISC)] |= BIT_MASK(ABS_MISC);
+
+        /* reports switches for jacks */
+        set_bit(EV_SW, audio->input_dev->evbit);
+        set_bit(SW_JACK_PHYSICAL_INSERT, audio->input_dev->swbit);
+        set_bit(SW_MICROPHONE_INSERT, audio->input_dev->swbit);
+        set_bit(SW_LINEOUT_INSERT, audio->input_dev->swbit);
+        set_bit(SW_HEADPHONE_INSERT, audio->input_dev->swbit);
+
+        /* reports keys for volume buttons */
+        set_bit(EV_KEY, audio->input_dev->evbit);
+        set_bit(KEY_VOLUMEUP, audio->input_dev->keybit);
+        set_bit(KEY_VOLUMEDOWN, audio->input_dev->keybit);
 
 	// register input device
 	if (input_register_device (audio->input_dev)) {
@@ -1131,6 +1135,20 @@ static int bmi_audio_probe (struct bmi_device *bdev)
 		rc = -ENODEV;
 		goto err3;
 	}
+
+        /* Report current input switch state, otherwise applications
+         * won't see an event for removing a plug that was plugged in
+         * when the driver was initialized
+         */
+        input_report_switch(audio->input_dev, SW_JACK_PHYSICAL_INSERT,
+                            audio->iox_data & GETSTAT_LI_INS);
+        input_report_switch(audio->input_dev, SW_MICROPHONE_INSERT,
+                            !(audio->iox_data & GETSTAT_MIC_INS));
+        input_report_switch(audio->input_dev, SW_LINEOUT_INSERT,
+                            audio->iox_data & GETSTAT_LO_INS);
+        input_report_switch(audio->input_dev, SW_HEADPHONE_INSERT,
+                            audio->iox_data & GETSTAT_HP_INS);
+
 #endif // INPUT
 
        	// power stablization delay
