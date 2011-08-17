@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Mon May 23 15:02:58 2011
+# Thu Aug 11 17:55:23 2011
 #
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
@@ -1743,7 +1743,7 @@ CONFIG_USB_HID=y
 # CONFIG_HID_MOSART is not set
 # CONFIG_HID_MONTEREY is not set
 # CONFIG_HID_NTRIG is not set
-# CONFIG_HID_ORTEK is not set
+CONFIG_HID_ORTEK=m
 # CONFIG_HID_PANTHERLORD is not set
 # CONFIG_HID_PETALYNX is not set
 # CONFIG_HID_PICOLCD is not set
@@ -1775,7 +1775,7 @@ CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
 CONFIG_USB_DEVICEFS=y
 # CONFIG_USB_DEVICE_CLASS is not set
 # CONFIG_USB_DYNAMIC_MINORS is not set
-CONFIG_USB_SUSPEND=n
+# CONFIG_USB_SUSPEND is not set
 CONFIG_USB_OTG=y
 # CONFIG_USB_OTG_WHITELIST is not set
 # CONFIG_USB_OTG_BLACKLIST_HUB is not set
