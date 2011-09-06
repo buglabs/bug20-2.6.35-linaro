@@ -247,7 +247,7 @@ static void omap2_mcspi_force_cs(struct spi_device *spi, int cs_active)
 	index = spi->chip_select - cdata->config->num_cs;
 	if (index >= 0){
 		//printk(KERN_INFO "force_cs: index: %d gpio: %d\n", index, cdata->config->gpio_cs[index]);
-		gpio_direction_output(cdata->config->gpio_cs[index], !cs_active);
+		gpio_direction_output(cdata->config->gpio_cs[index], (spi->mode & SPI_CS_HIGH) ? cs_active : !cs_active);
 	}
 
 	l = mcspi_cached_chconf0(spi);
