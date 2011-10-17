@@ -24,6 +24,8 @@
 #define BMI_RFID_IOCTL		('r')
 #define BMI_ACCNT_IOCTL		('A')
 #define BMI_BUGDUINO_IOCTL  ('d')
+#define BMI_COMCAST_MEDIA_IOCTL	('M')
+#define BMI_COMCAST_DECT_IOCTL	('D')
 
 #endif	/* BMI_IOCTL_H */
 

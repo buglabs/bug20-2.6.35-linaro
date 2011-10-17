@@ -1,0 +1,7 @@
+config BMI_COMCAST
+	tristate "BMI Comcast Modules"
+	depends on BMI_PIMS && MTD_M25P80
+	default y
+	---help---
+	  This is the BMI Comcast drivers.
+

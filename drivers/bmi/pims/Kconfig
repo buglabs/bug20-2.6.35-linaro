@@ -120,5 +120,6 @@ config BMI_BUGDUINO
 
           This driver can also be built as a module.
 
+source "drivers/bmi/pims/comcast/Kconfig
 endmenu
 
