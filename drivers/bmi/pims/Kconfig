@@ -128,5 +128,15 @@ config BMI_RF4CE
 	  BMI GreenPeak RF4CE plug-in module
 
 	  This driver can also be built as a module.
+
+config BMI_DECT
+	tristate "BMI DECT Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI DSPG DCX79 USB DECT Dongle module
+
+	  This driver can also be built as a module.
+
 endmenu
 

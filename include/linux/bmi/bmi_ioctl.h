@@ -25,6 +25,7 @@
 #define BMI_ACCNT_IOCTL		('A')
 #define BMI_BUGDUINO_IOCTL  	('d')
 #define BMI_RF4CE_IOCTL  	('R')
+#define BMI_DECT_IOCTL          ('D')
 
 #endif	/* BMI_IOCTL_H */
 
