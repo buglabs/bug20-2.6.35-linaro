@@ -120,5 +120,13 @@ config BMI_BUGDUINO
 
           This driver can also be built as a module.
 
+config BMI_RF4CE
+	tristate "BMI GP RF4CE Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI GreenPeak RF4CE plug-in module
+
+	  This driver can also be built as a module.
 endmenu
 
