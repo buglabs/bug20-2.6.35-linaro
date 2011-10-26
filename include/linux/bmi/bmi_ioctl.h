@@ -23,7 +23,8 @@
 #define BMI_LCD2X_IOCTL		('x')
 #define BMI_RFID_IOCTL		('r')
 #define BMI_ACCNT_IOCTL		('A')
-#define BMI_BUGDUINO_IOCTL  ('d')
+#define BMI_BUGDUINO_IOCTL  	('d')
+#define BMI_RF4CE_IOCTL  	('R')
 
 #endif	/* BMI_IOCTL_H */
 
