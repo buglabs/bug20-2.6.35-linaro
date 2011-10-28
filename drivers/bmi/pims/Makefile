@@ -19,3 +19,4 @@ obj-$(CONFIG_BMI_ACCNT)		+= accenture/
 obj-$(CONFIG_BMI_BUGDUINO)  += bugduino/
 obj-$(CONFIG_BMI_RF4CE)		+= rf4ce/
 obj-$(CONFIG_BMI_DECT)          += dect/
+obj-$(CONFIG_BMI_DLNA_MEDIA)    += dlna_media/
