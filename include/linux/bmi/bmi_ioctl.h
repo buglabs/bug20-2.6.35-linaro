@@ -26,6 +26,7 @@
 #define BMI_BUGDUINO_IOCTL  	('d')
 #define BMI_RF4CE_IOCTL  	('R')
 #define BMI_DECT_IOCTL          ('D')
+#define BMI_DLNA_MEDIA_IOCTL	('M')
 
 #endif	/* BMI_IOCTL_H */
 
