@@ -371,7 +371,7 @@ static int __devinit ml8953_i2c_probe(struct i2c_client *client,
 	input_set_abs_params(input_dev, ABS_X, -ML8953_RANGE, ML8953_RANGE, 3, 3);
 	input_set_abs_params(input_dev, ABS_Y, -ML8953_RANGE, ML8953_RANGE, 3, 3);
 	input_set_abs_params(input_dev, ABS_Z, -ML8953_RANGE, ML8953_RANGE, 3, 3);
-	
+
 	error = request_irq(client->irq, ml8953_irq,
 			  IRQF_TRIGGER_FALLING, client->dev.driver->name, ac);
 	if (error) {
@@ -388,7 +388,7 @@ static int __devinit ml8953_i2c_probe(struct i2c_client *client,
 	if (error)
 		goto free_dev_irq;
 	i2c_set_clientdata(client, ac);
-	ml8953_enable(ac);
+	//ml8953_enable(ac);
 	return 0;
 free_dev_irq:
 	free_irq(client->irq, ac);
