@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Fri Oct  7 13:50:33 2011
+# Wed Jan 18 13:11:13 2012
 #
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
@@ -1709,14 +1709,14 @@ CONFIG_SND_SOC_TWL4030=y
 # CONFIG_SOUND_PRIME is not set
 CONFIG_HID_SUPPORT=y
 CONFIG_HID=y
-# CONFIG_HIDRAW is not set
+CONFIG_HIDRAW=y
 
 #
 # USB Input Devices
 #
 CONFIG_USB_HID=y
 # CONFIG_HID_PID is not set
-# CONFIG_USB_HIDDEV is not set
+CONFIG_USB_HIDDEV=y
 
 #
 # Special HID drivers
@@ -2138,6 +2138,7 @@ CONFIG_BMI_VH=m
 CONFIG_BMI_GSM=m
 CONFIG_BMI_ACCNT=m
 CONFIG_BMI_BUGDUINO=m
+# CONFIG_BMI_RF4CE is not set
 CONFIG_BMI_DECT=m
 
 #
