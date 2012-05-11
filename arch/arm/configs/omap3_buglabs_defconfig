@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Wed Jan 18 13:11:13 2012
+# Fri May 11 14:21:33 2012
 #
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
@@ -1043,7 +1043,7 @@ CONFIG_USB_NET_SMSC95XX=y
 CONFIG_USB_NET_NET1080=y
 # CONFIG_USB_NET_PLUSB is not set
 # CONFIG_USB_NET_MCS7830 is not set
-# CONFIG_USB_NET_RNDIS_HOST is not set
+CONFIG_USB_NET_RNDIS_HOST=y
 # CONFIG_USB_NET_CDC_SUBSET is not set
 # CONFIG_USB_NET_ZAURUS is not set
 # CONFIG_USB_NET_INT51X1 is not set
@@ -2141,6 +2141,7 @@ CONFIG_BMI_BUGDUINO=m
 CONFIG_BMI_RF4CE=m
 CONFIG_BMI_RFID=m
 CONFIG_BMI_DECT=m
+CONFIG_BMI_BATTERY=m
 
 #
 # File systems
