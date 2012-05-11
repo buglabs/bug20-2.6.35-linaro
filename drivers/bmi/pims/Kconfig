@@ -129,12 +129,30 @@ config BMI_RF4CE
 
 	  This driver can also be built as a module.
 
+config BMI_RFID
+	tristate "BMI RFID Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI RFID plug-in module
+
+	  This driver can also be built as a module.
+
 config BMI_DECT
 	tristate "BMI DECT Module support"
 	depends on BMI_PIMS
 	default n
 	---help---
 	  BMI DSPG DCX79 USB DECT Dongle module
+
+	  This driver can also be built as a module.
+
+config BMI_BATTERY
+	tristate "BMI Battery Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI Battery plug-in module
 
 	  This driver can also be built as a module.
 

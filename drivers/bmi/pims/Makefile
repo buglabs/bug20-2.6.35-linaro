@@ -18,4 +18,6 @@ obj-$(CONFIG_BMI_ZB)		+= zb/
 obj-$(CONFIG_BMI_ACCNT)		+= accenture/
 obj-$(CONFIG_BMI_BUGDUINO)  += bugduino/
 obj-$(CONFIG_BMI_RF4CE)		+= rf4ce/
+obj-$(CONFIG_BMI_RFID)		+= rfid/
 obj-$(CONFIG_BMI_DECT)          += dect/
+obj-$(CONFIG_BMI_BATTERY)       += battery/

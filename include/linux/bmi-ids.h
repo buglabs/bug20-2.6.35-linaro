@@ -33,4 +33,6 @@
 #define BMI_PRODUCT_BUGDUINO 			0x0010
 #define BMI_PRODUCT_RF4CE 			0x0011
 #define BMI_PRODUCT_DECT                        0x0012
+#define BMI_PRODUCT_BATTERY                     0x0013
+#define BMI_PRODUCT_RFID 			0x0014
 #define	BMI_PRODUCT_ILLEGAL_F			0xFFFF
