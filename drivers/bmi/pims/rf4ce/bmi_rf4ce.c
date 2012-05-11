@@ -321,7 +321,7 @@ int bmi_rf4ce_probe(struct bmi_device *bdev)
 	bmi_slot_gpio_direction_out (slot, RED_LED, 0);	// Red LED=ON
 	bmi_slot_gpio_direction_out (slot, GREEN_LED, 0);	// Red LED=ON
 	bmi_slot_gpio_direction_out (slot, GPIO_0, 0);	// Red LED=ON
-	bmi_slot_gpio_direction_out (slot, GPIO_1, 1);	// Red LED=ON
+	bmi_slot_gpio_direction_out (slot, GPIO_1, 0);	// Red LED=ON
 	
 	mdelay(200);
 	
