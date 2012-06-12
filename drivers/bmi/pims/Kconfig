@@ -156,5 +156,15 @@ config BMI_BATTERY
 
 	  This driver can also be built as a module.
 
+config BMI_DLNA_MEDIA
+	tristate "BMI DLNA Media Module support"
+	depends on BMI_PIMS
+	default n
+	---help---
+	  BMI VIXS XC5195 Network Processor module that support DLNA
+	  media server, MoCA, and IEEE1394/Firewire
+
+	  This driver can also be built as a module.
+
 endmenu
 
