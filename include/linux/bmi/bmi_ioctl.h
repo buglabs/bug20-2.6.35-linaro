@@ -28,6 +28,7 @@
 #define BMI_DECT_IOCTL          ('D')
 #define BMI_BATTERY_IOCTL       ('b')
 #define BMI_DLNA_MEDIA_IOCTL	('M')
+#define BMI_VOICE_IOCTL		('V')
 
 #endif	/* BMI_IOCTL_H */
 

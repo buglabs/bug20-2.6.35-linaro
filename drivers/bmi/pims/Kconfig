@@ -166,5 +166,14 @@ config BMI_DLNA_MEDIA
 
 	  This driver can also be built as a module.
 
+config BMI_VOICE
+	tristate "BMI VOICE Module support"
+	depends on BMI_PIMS
+	default n 
+	---help---
+	  BMI Voice plug-in module
+
+	  This driver can also be built as a module.
+
 endmenu
 

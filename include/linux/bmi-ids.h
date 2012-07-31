@@ -36,5 +36,7 @@
 #define BMI_PRODUCT_DLNA_MEDIA                  0x0013
 #define BMI_PRODUCT_RFID 			0x0014
 #define BMI_PRODUCT_BATTERY                     0x0015
+#define BMI_PRODUCT_VOICE                     	0x0016
+
 
 #define	BMI_PRODUCT_ILLEGAL_F			0xFFFF

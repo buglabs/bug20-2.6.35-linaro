@@ -22,3 +22,4 @@ obj-$(CONFIG_BMI_RFID)		+= rfid/
 obj-$(CONFIG_BMI_DECT)          += dect/
 obj-$(CONFIG_BMI_BATTERY)       += battery/
 obj-$(CONFIG_BMI_DLNA_MEDIA)    += dlna_media/
+obj-$(CONFIG_BMI_VOICE)    	+= voice/
